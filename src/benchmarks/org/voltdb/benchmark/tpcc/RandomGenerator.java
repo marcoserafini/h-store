@@ -164,6 +164,9 @@ public abstract class RandomGenerator {
     	// Generate 1 less number than the range
         
     	int ith = number(0, localList.size()-1);
+    	while(localList.get(ith) == localWarehouseId){
+    		ith = number(0, localList.size()-1);
+    	}
     	return localList.get(ith);
     }
     // Marco end

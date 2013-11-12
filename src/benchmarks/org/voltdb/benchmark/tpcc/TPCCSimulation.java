@@ -138,7 +138,10 @@ public class TPCCSimulation {
         
         // Marco begin
         // FIXME misuses previous parameter warehouse_pairing
+        config.warehouse_pairing = true;
         if(config.warehouse_pairing){
+        	System.out.println("Pairing activated");
+        	LOG.info("Pairing activated");
             synchronized (TPCCSimulation.class) {
                 if (localWarehouseIds == null) {
                 	localWarehouseIds = new HashMap<Integer, List<Integer>>();
@@ -166,7 +169,7 @@ public class TPCCSimulation {
             			localWarehouseIds.put(w_id0, lList);
                 	} // FOR
             		
-            		LOG.debug("NewOrder Remote W_ID Mapping\n" + StringUtil.formatMaps(remoteWarehouseIds));
+            		LOG.info("NewOrder Local W_ID Mapping\n" + StringUtil.formatMaps(localWarehouseIds));
                 }
             } // SYNCH	
         }
@@ -332,7 +335,7 @@ public class TPCCSimulation {
         else if (remote_w_id > last_warehouse) remote_w_id = starting_warehouse;
         return (short)remote_w_id;
         */
-    	return (short) generator.numberLocalWarehouseId(starting_warehouse, last_warehouse, (int) w_id);
+    	return (short) generator.numberLocalWarehouseId(starting_warehouse, last_warehouse, (int) w_id); // Marco
     }
     
     // ----------------------------------------------------------------------------
