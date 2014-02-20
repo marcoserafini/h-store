@@ -25,9 +25,6 @@ import org.qcri.PartitioningPlanner.placement.FirstFitPlacement;
 import org.qcri.PartitioningPlanner.placement.OneTieredPlacement;
 import org.qcri.PartitioningPlanner.placement.GAPlacement;
 import org.qcri.PartitioningPlanner.placement.Plan;
-import org.voltdb.VoltTable;
-import org.voltdb.VoltTableRow;
-import org.voltdb.client.Client;
 import org.voltdb.client.ClientFactory;
 import org.voltdb.client.ClientResponse;
 import org.voltdb.client.NoConnectionsException;
@@ -85,7 +82,7 @@ public class Controller implements Runnable {
 		client.configureBlocking(false);
 		sites = CatalogUtil.getAllSites(catalog);
 		connectToHost();
-		provisioning = new Provisioning(client,no_of_partitions,sitesPerHost,partPerSite,highCPU,lowCPU,sites.size());
+		provisioning = new Provisioning(sites, no_of_partitions, sitesPerHost, partPerSite, highCPU, lowCPU);
 
 		if(hstore_conf.global.hasher_plan == null){
 			System.out.println("Must set global.hasher_plan to specify plan file!");
@@ -185,8 +182,10 @@ public class Controller implements Runnable {
 			{
 
 				System.out.println("Provisioning is on");	
+				int numberOfSites = provisioning.sitesRequired();
+				System.out.println("Provisioning requires " + numberOfSites + " sites");
 				currentPlan = algo.computePlan(hotTuplesList, mSiteLoad, planFile.toString(), 
-						provisioning.noOfSitesRequiredQuery(), timeLimit);
+						numberOfSites, timeLimit);
 
 			}
 			else
