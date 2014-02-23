@@ -184,10 +184,11 @@ public class Controller implements Runnable {
 			{
 
 				System.out.println("Provisioning is on");	
-				int numberOfSites = provisioning.sitesRequired();
-				System.out.println("Provisioning requires " + numberOfSites + " sites");
+				int numberOfPartitions = provisioning.partitionsRequired();
+				System.out.println("Provisioning requires " + numberOfPartitions + " partitions");
 				currentPlan = algo.computePlan(hotTuplesList, mSiteLoad, planFile.toString(), 
-						numberOfSites, timeLimit);
+						numberOfPartitions, timeLimit);
+				provisioning.setPartitions(numberOfPartitions);
 
 			}
 			else
@@ -286,6 +287,7 @@ public class Controller implements Runnable {
 		}
 		else // use default
 		{
+			System.out.println("Using default parameters");
 			no_of_partitions = 4;
 			time_window = 10;
 			planner_selector = 0;
@@ -297,8 +299,6 @@ public class Controller implements Runnable {
 			highCPU = 1280;
 			lowCPU = 960;
 		}
-
-
 
 
 		Controller c = new Controller(args.catalog, hstore_conf);
