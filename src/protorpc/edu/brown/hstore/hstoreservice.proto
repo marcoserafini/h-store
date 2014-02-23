@@ -730,6 +730,9 @@ enum ReconfigurationControlType{
   // that the source of the tuple can delete the chunk, it saves it 
   // in temp buffer upto that point
   CHUNK_RECEIVED = 3;
+  // This is sent from the leader to move to the next reconfiguration plan
+  // if they were split
+  NEXT_RECONFIGURATION_PLAN = 4;
 }
 
 message ReconfigurationControlRequest {

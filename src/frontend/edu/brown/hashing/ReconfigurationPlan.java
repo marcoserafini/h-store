@@ -31,12 +31,28 @@ import edu.brown.hstore.reconfiguration.ReconfigurationUtil;
 public class ReconfigurationPlan {
 
     private static final Logger LOG = Logger.getLogger(ReconfigurationPlan.class);
-    Map<String,ReconfigurationTable<? extends Comparable<?>>> tables_map;
+    protected Map<String,ReconfigurationTable<? extends Comparable<?>>> tables_map;
     
     //Helper map of partition ID and outgoing/incoming ranges for this reconfiguration
     protected Map<Integer, List<ReconfigurationRange<? extends Comparable<?>>>> outgoing_ranges;
     protected Map<Integer, List<ReconfigurationRange<? extends Comparable<?>>>> incoming_ranges;
     public String planDebug = "";
+    
+    public ReconfigurationPlan(){
+        outgoing_ranges = new HashMap<>();
+        incoming_ranges = new HashMap<>();
+    }
+    
+    public void addRange(ReconfigurationRange<?> range){
+        if(outgoing_ranges.containsKey(range.old_partition)==false){
+            outgoing_ranges.put(range.old_partition, new ArrayList<ReconfigurationRange<? extends Comparable<?>>>());
+        }
+        if(incoming_ranges.containsKey(range.new_partition)==false){
+            incoming_ranges.put(range.new_partition, new ArrayList<ReconfigurationRange<? extends Comparable<?>>>());
+        }
+        outgoing_ranges.get(range.old_partition).add(range);
+        incoming_ranges.get(range.new_partition).add(range);
+    }    
     
     /**
      * @throws Exception 
@@ -58,14 +74,7 @@ public class ReconfigurationPlan {
     protected void registerReconfigurationRanges(){
         for(String table_name : tables_map.keySet()){
             for(ReconfigurationRange<?> range : tables_map.get(table_name).getReconfigurations()){
-                if(outgoing_ranges.containsKey(range.old_partition)==false){
-                    outgoing_ranges.put(range.old_partition, new ArrayList<ReconfigurationRange<? extends Comparable<?>>>());
-                }
-                if(incoming_ranges.containsKey(range.new_partition)==false){
-                    incoming_ranges.put(range.new_partition, new ArrayList<ReconfigurationRange<? extends Comparable<?>>>());
-                }
-                outgoing_ranges.get(range.old_partition).add(range);
-                incoming_ranges.get(range.new_partition).add(range);
+                addRange(range);
             }
         }
     }

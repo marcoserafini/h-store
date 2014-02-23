@@ -1225,7 +1225,23 @@ public class PartitionExecutor implements Runnable, Configurable, Shutdownable {
             this.idle_click_count+=1;
             //LOG.info("idle click count : " + idle_click_count);
             
-            if (reconfiguration_coordinator.getReconfigurationInProgress() && asyncOutstanding.get() == false && reconfiguration_coordinator.queueAsyncPull() 
+	    if (reconfiguration_coordinator.getReconfigurationInProgress() && reconfiguration_coordinator.queueAsyncPull()
+		&& this.asyncRequestPullQueue.isEmpty() == false
+		&& (idle_click_count > MAX_PULL_ASYNC_EVERY_CLICKS  || System.currentTimeMillis() > this.nextAsyncPullTimeMS )){
+		if (idle_click_count > MAX_PULL_ASYNC_EVERY_CLICKS) {
+                    LOG.info(String.format(" ### Adding the next async pull from the asyncRequestPullQueue due to IDLE Clicks. Items : %s  IdleCount:%s",
+					   asyncRequestPullQueue.size(),idle_click_count));
+                } else {
+                    LOG.info(String.format(" ### Adding the next async pull from the asyncRequestPullQueue due to time. Items : %s  IdleCount:%s", 
+					   asyncRequestPullQueue.size(),idle_click_count));
+                }
+            
+		this.idle_click_count = 0;
+		nextAsyncPullTimeMS = System.currentTimeMillis() + MIN_MS_BETWEEN_ASYNC_PULLS;
+
+		this.work_queue.offer(asyncRequestPullQueue.remove());
+	    }
+            else if (reconfiguration_coordinator.getReconfigurationInProgress() && asyncOutstanding.get() == false && reconfiguration_coordinator.queueAsyncPull() 
                     && this.scheduleAsyncPullQueue.isEmpty() == false
                     && (idle_click_count > MAX_PULL_ASYNC_EVERY_CLICKS  || System.currentTimeMillis() > this.nextAsyncPullTimeMS )){
                 if (idle_click_count > MAX_PULL_ASYNC_EVERY_CLICKS) {
@@ -1233,7 +1249,9 @@ public class PartitionExecutor implements Runnable, Configurable, Shutdownable {
                 } else {
                     LOG.info(String.format(" ### Pulling and scheduling the next async pull from the scheduleAsyncPullQueue due to time. Items : %s  IdleCount:%s", scheduleAsyncPullQueue.size(),idle_click_count));
                 }                
+	
                 this.idle_click_count = 0;
+		nextAsyncPullTimeMS = System.currentTimeMillis() + MIN_MS_BETWEEN_ASYNC_PULLS;
                 ScheduleAsyncPullRequestMessage pullMsg = scheduleAsyncPullQueue.poll();
                 if (pullMsg != null){
                     this.work_queue.offer(pullMsg);
@@ -3487,8 +3505,8 @@ public class PartitionExecutor implements Runnable, Configurable, Shutdownable {
     
     public void queueAsyncDataRequestMessageToWorkQueue(){
         if(!asyncRequestPullQueue.isEmpty()){
-            LOG.info(" ### Adding the next asynch pull from requestPullQueue to the work queue. size : " + asyncRequestPullQueue.size());
-    		this.work_queue.offer(asyncRequestPullQueue.remove());
+            //LOG.info(" ### Adding the next asynch pull from requestPullQueue to the work queue. size : " + asyncRequestPullQueue.size());
+	    //this.work_queue.offer(asyncRequestPullQueue.remove());
     	} else {
     	    LOG.info(" ### RequestPullQueue is empty");
     	}
@@ -6332,7 +6350,7 @@ public class PartitionExecutor implements Runnable, Configurable, Shutdownable {
         if (this.reconfig_plan != null) {
             String msg = "Reconfiguration plan already set. Cannot set until previous reconfig plan is complete. Current state: " + reconfig_state;
             LOG.error(msg);
-            throw new Exception(msg);
+            //throw new Exception(msg);
 
         }
         if (debug.val) {
@@ -6482,7 +6500,8 @@ public class PartitionExecutor implements Runnable, Configurable, Shutdownable {
                     try {
                         if (moreDataComing) {
                             this.reconfiguration_tracker.markRangeAsPartiallyReceived(new ReconfigurationRange<Long>
-                                (table_name, VoltType.BIGINT, minInclusive, maxExclusive, oldPartitionId, newPartitionId));                        
+                                (table_name, VoltType.BIGINT, minInclusive, maxExclusive, oldPartitionId, newPartitionId));
+			    nextAsyncPullTimeMS = System.currentTimeMillis() + MIN_MS_BETWEEN_ASYNC_PULLS;
                         } else {
                             this.reconfiguration_tracker.markRangeAsReceived(new ReconfigurationRange<Long>
                                 (table_name, VoltType.BIGINT, minInclusive, maxExclusive, oldPartitionId, newPartitionId));
