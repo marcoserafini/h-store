@@ -11,7 +11,7 @@ import org.qcri.PartitioningPlanner.placement.Plan;
 
 public class GreedyExtendedPlacement extends Placement {
 	
-	Long coldPartitionWidth = 1000L; // redistribute cold tuples in chunks of 1000
+	Long coldPartitionWidth = 100000L; // redistribute cold tuples in chunks of 100000
 	
 	public GreedyExtendedPlacement(){
 		

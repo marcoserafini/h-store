@@ -180,16 +180,16 @@ public class TestTwoTieredRangePartitions extends BaseTestCase {
         ReconfigurationTable<Integer> reconfig = new ReconfigurationTable<>(old_table, new_table);
         ReconfigurationRange<Integer> range = null;
         range = reconfig.getReconfigurations().get(0);
-        assertTrue(range.min_inclusive == 5 && range.max_exclusive == 7 && range.old_partition == 1 && range.new_partition == 2);
+        assertTrue(range.getMin_inclusive() == 5 && range.getMax_exclusive() == 7 && range.old_partition == 1 && range.new_partition == 2);
 
         range = reconfig.getReconfigurations().get(1);
-        assertTrue(range.min_inclusive == 7 && range.max_exclusive == 10 && range.old_partition == 1 && range.new_partition == 3);
+        assertTrue(range.getMin_inclusive() == 7 && range.getMax_exclusive() == 10 && range.old_partition == 1 && range.new_partition == 3);
 
         range = reconfig.getReconfigurations().get(2);
-        assertTrue(range.min_inclusive == 20 && range.max_exclusive == 25 && range.old_partition == 3 && range.new_partition == 2);
+        assertTrue(range.getMin_inclusive() == 20 && range.getMax_exclusive() == 25 && range.old_partition == 3 && range.new_partition == 2);
 
         range = reconfig.getReconfigurations().get(3);
-        assertTrue(range.min_inclusive == 25 && range.max_exclusive == 26 && range.old_partition == 3 && range.new_partition == 1);
+        assertTrue(range.getMin_inclusive() == 25 && range.getMax_exclusive() == 26 && range.old_partition == 3 && range.new_partition == 1);
     }
 
     public void testPreviousPlan() throws Exception {
@@ -211,10 +211,10 @@ public class TestTwoTieredRangePartitions extends BaseTestCase {
         ReconfigurationTable<Integer> reconfig = new ReconfigurationTable<>(old_table, new_table);
         ReconfigurationRange<Integer> range = null;
         range = reconfig.getReconfigurations().get(0);
-        assertTrue(range.min_inclusive == 10 && range.max_exclusive == 20 && range.old_partition == 1 && range.new_partition == 2);
+        assertTrue(range.getMin_inclusive() == 10 && range.getMax_exclusive() == 20 && range.old_partition == 1 && range.new_partition == 2);
 
         range = reconfig.getReconfigurations().get(1);
-        assertTrue(range.min_inclusive == 20 && range.max_exclusive == 30 && range.old_partition == 1 && range.new_partition == 3);
+        assertTrue(range.getMin_inclusive() == 20 && range.getMax_exclusive() == 30 && range.old_partition == 1 && range.new_partition == 3);
     }
 
     public void testReconfigurationTable3() throws Exception {
@@ -233,10 +233,10 @@ public class TestTwoTieredRangePartitions extends BaseTestCase {
         ReconfigurationTable<Integer> reconfig = new ReconfigurationTable<>(new_table, old_table);
         ReconfigurationRange<Integer> range = null;
         range = reconfig.getReconfigurations().get(0);
-        assertTrue(range.min_inclusive == 10 && range.max_exclusive == 20 && range.old_partition == 2 && range.new_partition == 1);
+        assertTrue(range.getMin_inclusive() == 10 && range.getMax_exclusive() == 20 && range.old_partition == 2 && range.new_partition == 1);
 
         range = reconfig.getReconfigurations().get(1);
-        assertTrue(range.min_inclusive == 20 && range.max_exclusive == 30 && range.old_partition == 3 && range.new_partition == 1);
+        assertTrue(range.getMin_inclusive() == 20 && range.getMax_exclusive() == 30 && range.old_partition == 3 && range.new_partition == 1);
     }
 
     @SuppressWarnings("unchecked")
@@ -263,22 +263,22 @@ public class TestTwoTieredRangePartitions extends BaseTestCase {
         ReconfigurationTable<Integer> reconfig = (ReconfigurationTable<Integer>) reconfig_plan.tables_map.get("table");
         ReconfigurationRange<Integer> range = null;
         range = reconfig.getReconfigurations().get(0);
-        assertTrue(range.min_inclusive == 10 && range.max_exclusive == 20 && range.old_partition == 1 && range.new_partition == 2);
+        assertTrue(range.getMin_inclusive() == 10 && range.getMax_exclusive() == 20 && range.old_partition == 1 && range.new_partition == 2);
 
         range = reconfig.getReconfigurations().get(1);
-        assertTrue(range.min_inclusive == 20 && range.max_exclusive == 30 && range.old_partition == 1 && range.new_partition == 3);
+        assertTrue(range.getMin_inclusive() == 20 && range.getMax_exclusive() == 30 && range.old_partition == 1 && range.new_partition == 3);
 
         range = (ReconfigurationRange<Integer>) reconfig_plan.incoming_ranges.get(2).get(0);
-        assertTrue(range.min_inclusive == 10 && range.max_exclusive == 20 && range.old_partition == 1 && range.new_partition == 2);
+        assertTrue(range.getMin_inclusive() == 10 && range.getMax_exclusive() == 20 && range.old_partition == 1 && range.new_partition == 2);
 
         range = (ReconfigurationRange<Integer>) reconfig_plan.outgoing_ranges.get(1).get(0);
-        assertTrue(range.min_inclusive == 10 && range.max_exclusive == 20 && range.old_partition == 1 && range.new_partition == 2);
+        assertTrue(range.getMin_inclusive() == 10 && range.getMax_exclusive() == 20 && range.old_partition == 1 && range.new_partition == 2);
 
         range = (ReconfigurationRange<Integer>) reconfig_plan.outgoing_ranges.get(1).get(1);
-        assertTrue(range.min_inclusive == 20 && range.max_exclusive == 30 && range.old_partition == 1 && range.new_partition == 3);
+        assertTrue(range.getMin_inclusive() == 20 && range.getMax_exclusive() == 30 && range.old_partition == 1 && range.new_partition == 3);
 
         range = (ReconfigurationRange<Integer>) reconfig_plan.incoming_ranges.get(3).get(0);
-        assertTrue(range.min_inclusive == 20 && range.max_exclusive == 30 && range.old_partition == 1 && range.new_partition == 3);
+        assertTrue(range.getMin_inclusive() == 20 && range.getMax_exclusive() == 30 && range.old_partition == 1 && range.new_partition == 3);
 
     }
 }

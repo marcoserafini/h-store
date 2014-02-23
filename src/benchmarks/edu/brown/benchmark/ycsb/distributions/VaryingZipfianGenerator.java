@@ -124,7 +124,12 @@ public class VaryingZipfianGenerator extends IntegerGenerator
      * Percentage of tuple accesses that go to the k hot tuples
      */
     double percentAccessHotSpots = 0.0;
-    
+       
+    /**
+     * Whether to make the location of the hot spots random
+    */
+    boolean randomHotSpots = false;
+ 
     /**
      * List of the k randomly selected hot spots
      */
@@ -281,6 +286,10 @@ public class VaryingZipfianGenerator extends IntegerGenerator
     public double getPercentAccessHotSpots() {
     	return percentAccessHotSpots;
     }
+
+    public boolean getRandomHotSpots() {
+        return randomHotSpots;
+    }
     
     public void setScrambled(boolean scrambled) {
 		this.scrambled = scrambled;
@@ -306,20 +315,30 @@ public class VaryingZipfianGenerator extends IntegerGenerator
     	this.numHotSpots = numHotSpots;
     	HashSet<Long> hotSpotsSet = new HashSet<Long>(numHotSpots);
     	long item = 0;
-    	while(hotSpotsSet.size() < numHotSpots) {
+	if(randomHotSpots) {
+    	  while(hotSpotsSet.size() < numHotSpots) {
     		Utils.random().setSeed(item);
     		item = Utils.random().nextLong() % items + min;
 		if (item < min) item += items;
     		if(!hotSpotsSet.add(item)) {
 		    item += 1;
 		}
-    	}
+    	  }
+	} else {
+    	  for(int i = 0; i < numHotSpots; ++i) {
+	      hotSpotsSet.add(i + min);
+	  }
+	}
     	hotSpots.clear();
     	hotSpots.addAll(hotSpotsSet);
     }
 	
     public void setPercentAccessHotSpots(double percentAccessHotSpots) {
     	this.percentAccessHotSpots = percentAccessHotSpots;
+    }
+
+    public void setRandomHotSpots(boolean randomHotSpots) {
+        this.randomHotSpots = randomHotSpots;
     }
 	
 	/**************************************************************************/

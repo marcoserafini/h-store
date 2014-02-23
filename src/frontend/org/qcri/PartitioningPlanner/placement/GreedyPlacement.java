@@ -10,7 +10,7 @@ import org.qcri.PartitioningPlanner.placement.Plan;
 
 public class GreedyPlacement extends Placement {
 	
-	Long coldPartitionWidth = 1000L; // redistribute cold tuples in chunks of 1000 if shrinking
+	Long coldPartitionWidth = 100000L; // redistribute cold tuples in chunks of 100000 if shrinking
 	
 	public GreedyPlacement(){
 		

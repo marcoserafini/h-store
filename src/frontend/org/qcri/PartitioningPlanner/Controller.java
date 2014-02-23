@@ -166,6 +166,8 @@ public class Controller implements Runnable {
 
 			ttExecutor.turnOnOff(time_window,client);	// turn on tuple tracking for time window of X seconds
 
+			
+			
 			// here we get top K
 			ttExecutor.getTopKPerPart(no_of_partitions,hotTuplesList);
 

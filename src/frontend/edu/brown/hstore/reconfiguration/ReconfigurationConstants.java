@@ -8,4 +8,5 @@ public abstract class ReconfigurationConstants {
   }
   
   public static long MAX_TRANSFER_BYTES = 1024*1024*9; //9 MB
+  public static long MIN_TRANSFER_BYTES = 1024*1024*9; //9 MB
 }

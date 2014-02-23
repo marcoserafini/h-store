@@ -843,7 +843,7 @@ public class HStoreCoordinator implements Shutdownable {
           try {
             response = hstore_site.getReconfigurationCoordinator().receiveTuples(
                 request.getSenderSite(), request.getT0S(), request.getOldPartition(), request.getNewPartition(), 
-                request.getVoltTableName(), vt, request.getMinInclusive(), request.getMaxExclusive());
+                request.getVoltTableName(), vt, request.getMinInclusiveList(), request.getMaxExclusiveList());
           } catch (Exception e) {
             // TODO Auto-generated catch block
             LOG.error("Exception incurred while receiving tuples", e);

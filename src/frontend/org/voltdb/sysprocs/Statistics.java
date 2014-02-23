@@ -38,14 +38,17 @@ import org.voltdb.VoltTable;
 import org.voltdb.VoltTable.ColumnInfo;
 import org.voltdb.VoltType;
 import org.voltdb.catalog.CatalogMap;
+import org.voltdb.catalog.Partition;
 import org.voltdb.catalog.Table;
 import org.voltdb.exceptions.ServerFaultException;
 import org.voltdb.utils.Pair;
 import org.voltdb.utils.VoltTableUtil;
 
 import edu.brown.hstore.HStoreConstants;
+import edu.brown.hstore.HStoreSite;
 import edu.brown.hstore.PartitionExecutor;
 import edu.brown.hstore.PartitionExecutor.SystemProcedureExecutionContext;
+import edu.brown.hstore.conf.HStoreConf;
 import edu.brown.hstore.internal.UtilityWorkMessage.UpdateMemoryMessage;
 import edu.brown.hstore.reconfiguration.ReconfigurationCoordinator.ReconfigurationState;
 import edu.brown.logging.LoggerUtil;
@@ -61,6 +64,8 @@ import edu.brown.profilers.ReconfigurationProfiler;
 )
 
 public class Statistics extends VoltSystemProcedure {
+	
+	//private static long tuple_turnOnOff ; // Essam turn on or off tracking
     private static final Logger HOST_LOG = Logger.getLogger(Statistics.class);
     private static final LoggerBoolean debug = new LoggerBoolean();
     private static final LoggerBoolean trace = new LoggerBoolean();
@@ -269,6 +274,7 @@ public class Statistics extends VoltSystemProcedure {
                //return new DependencySet(DEP_tupleData, result); 
                 
                 DependencySet dSet = new DependencySet(DEP_tupleData, result);
+                
               //Essam turn on/off tuple tracking
             	///////////////////////////////////
             	// Essam Enable read/write set tracking 
@@ -277,12 +283,49 @@ public class Statistics extends VoltSystemProcedure {
             	//this.hstore_conf.site.exec_readwrite_tracking
             	//del me
                 
+               
+               /*
+                
+                List<PartitionExecutor> all_executors;
+                all_executors = new ArrayList<>();
+                
+                
+                                
+                for (int p_id : hstore_site.getCatalogContext().getAllPartitionIds().values()) {
+                    all_executors.add(hstore_site.getPartitionExecutor(p_id));
+                    
+                }
+                
+                for (PartitionExecutor executor : all_executors) {
+                    
+                	executor.turnOnOff_readwrite_tracking(tuple_turnOnOff);
+                	
+                }
+               //*/
+                
+               
+                /*
+                if (tuple_turnOnOff == 1) // turn on
+                
+                	hstore_conf.site.exec_readwrite_tracking = true;
+                else 
+                	hstore_conf.site.exec_readwrite_tracking = false;
+                //*/
+                
+                
+                
+                
+                
                 // Cached list of local executors
+                /*
                 List<PartitionExecutor> local_executors;
                 local_executors = new ArrayList<>();
                 
+                
+                                
                 for (int p_id : hstore_site.getLocalPartitionIds().values()) {
                     local_executors.add(hstore_site.getPartitionExecutor(p_id));
+                    
                     //partitionStates.put(p_id, ReconfigurationState.NORMAL);
                     //if(hstore_conf.site.reconfig_profiling) 
                     //    this.profilers[p_id] = new ReconfigurationProfiler();
@@ -290,10 +333,11 @@ public class Statistics extends VoltSystemProcedure {
                 
                 for (PartitionExecutor executor : local_executors) {
                     
-                	executor.turnOnOff_readwrite_tracking();
-                	//executorMap.put(executor.getPartitionId(),executor);
-                    //livePullKBMap.put(executor.getPartitionId(),new Integer(0));
+                	executor.turnOnOff_readwrite_tracking(tuple_turnOnOff);
+                	
                 }
+               //*/ 
+                
                 
                 
             	//Essam Turn On Off Read Write Tracker
@@ -459,7 +503,13 @@ public class Statistics extends VoltSystemProcedure {
      * @throws VoltAbortException
      */
     public VoltTable[] run(String selector, long interval) throws VoltAbortException {
-        VoltTable[] results;
+       
+    	//tuple_turnOnOff = interval; //Essam interval has value 0 for off and 1 for on
+    	
+    	//if(selector.contains("TUPLE"))
+    	//interval = 0;
+    	
+    	VoltTable[] results;
         final long now = System.currentTimeMillis();
         selector = selector.toUpperCase();
         

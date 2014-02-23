@@ -15,7 +15,7 @@ import org.qcri.PartitioningPlanner.placement.Plan;
 
 public class OneTieredPlacement extends Placement {
 
-	Long coldPartitionWidth = 1000L; // redistribute cold tuples in chunks of 1000
+	Long coldPartitionWidth = 100000L; // redistribute cold tuples in chunks of 100000
 	ArrayList<Long> accesses = null; 
 	ArrayList<Integer> locations = null; 
 	ArrayList<List<Plan.Range>> slices = null;
@@ -94,7 +94,13 @@ public class OneTieredPlacement extends Placement {
 		Long meanAccesses = totalAccesses / partitionCount;
 		System.out.println("Mean access count: " + meanAccesses);
 
-		double partitionUpperBound = meanAccesses * 1.05; // slightly over target
+		Long maxAccess = 0L;
+		for(Long access : accesses) {
+			if(access > maxAccess) {
+				maxAccess = access;
+			}
+		}
+		double partitionUpperBound = Math.max(meanAccesses, maxAccess) * 1.05; // slightly over target
 
 		// one constraint for each partition for load balancing, one for each placement s.t. it appears exactly once
 		GLPK.glp_add_rows(lp, partitionCount + sliceCount);

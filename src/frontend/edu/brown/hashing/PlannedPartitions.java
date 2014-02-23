@@ -563,6 +563,10 @@ public class PlannedPartitions implements JSONSerializable {
             this.max_exclusive_long = ((Number) max_exclusive).longValue();
         }
 
+        public PartitionRange(VoltType vt) {
+            this.vt = vt;            
+        }
+
         @Override
         public String toString() {
             return "PartitionRange [" + this.min_inclusive + "-" + this.max_exclusive + ") p_id=" + this.partition + "]";

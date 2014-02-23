@@ -126,7 +126,7 @@ public class YCSBLoader extends Loader {
                     VoltTable table = CatalogUtil.getVoltTable(catalog_tbl);
                     Object row[] = new Object[table.getColumnCount()];
 
-                    for (int i = start; i < stop; i++) {
+                    for (int i = start; i < stop && i < init_record_count; i++) {
                         row[0] = i;
 
                         // randomly generate strings for each column

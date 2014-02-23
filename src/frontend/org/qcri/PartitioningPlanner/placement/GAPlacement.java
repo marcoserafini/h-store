@@ -24,7 +24,7 @@ import org.qcri.PartitioningPlanner.placement.Plan;
 
 public class GAPlacement extends Placement {
 	
-	Long coldPartitionWidth = 1000L; // redistribute cold tuples in chunks of 1000
+	Long coldPartitionWidth = 100000L; // redistribute cold tuples in chunks of 100000
 	ArrayList<Long> tupleIds = null;
 	ArrayList<Long> accesses = null; 
 	ArrayList<Integer> locations = null; 
@@ -118,18 +118,19 @@ public class GAPlacement extends Placement {
 
 		int placementCount = tupleCount + sliceCount; // number of placements we will make
 		Long meanAccesses = totalAccesses / partitionCount;
+		getHottestTuple(hotTuplesList);
 
 		System.out.println("Mean access count: " + meanAccesses);
 		
 		// Set up the genetic algorithm
 		GAParameterSet params = new DefaultParameterSet();
-		params.setPopulationSize(50);
+		params.setPopulationSize(100);
 		GAPlacementFitness fitness = new GAPlacementFitness();
 		fitness.initialize(tupleIds,accesses,locations,slices,sliceSizes,tupleCount,
-				sliceCount,totalAccesses,partitionCount); 
+				sliceCount,totalAccesses,partitionCount,_hotAccessCount); 
 		params.setFitnessEvaluationAlgorithm(fitness);
 		params.setSelectionAlgorithm(new RouletteWheelSelection(-10E10));
-		params.setMaxGenerationNumber(50);
+		params.setMaxGenerationNumber(100);
 		ReproductionAlgorithm reprAlg = new SimpleBinaryXOverWithMutation(0.65, 0.05);
 		params.setReproductionAlgorithm(reprAlg);
 		int precision = (int) Math.ceil(Math.log(partitionCount)/Math.log(2)) + 1;
@@ -141,8 +142,8 @@ public class GAPlacement extends Placement {
 		InitialPopulationGA ga = new InitialPopulationGA();
 		
 		// seed the initial population with individuals matching the current plan
-		Individual [] initialIndivs = new Individual[5];
-		for(int i = 0; i < 5; ++i) {
+		Individual [] initialIndivs = new Individual[10];
+		for(int i = 0; i < 10; ++i) {
 			NDecimalsIndividual indiv = new NDecimalsIndividual(placementCount, 1, precision);
 			for(int j = 0; j < locations.size(); j++) {
 			    indiv.setDoubleValue(j, (double) locations.get(j));

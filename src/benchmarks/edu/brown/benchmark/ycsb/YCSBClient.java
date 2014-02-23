@@ -98,7 +98,7 @@ public class YCSBClient extends BenchmarkComponent {
     private int numHotSpots = 0;
     private double percentAccessHotSpots = 0.0;
     private boolean randomShift = false;
-    
+    private boolean randomHotSpots = false;    
     
     int run_count = 0; 
     
@@ -162,6 +162,10 @@ public class YCSBClient extends BenchmarkComponent {
             else if (key.equalsIgnoreCase("percent_accesses_to_hot_spots")) {
                 this.percentAccessHotSpots = Double.valueOf(value);
             }
+	    // Whether to make the location of the hot spots random
+            else if (key.equalsIgnoreCase("random_hot_spots")) {
+                this.randomHotSpots = Boolean.valueOf(value);
+            }
             else{
                 if(debug.val) LOG.debug("Unknown prop : "  + key);
             }
@@ -199,9 +203,10 @@ public class YCSBClient extends BenchmarkComponent {
             VaryingZipfianGenerator gen = new VaryingZipfianGenerator(init_record_count, skewFactor);
             gen.setInterval(interval);
             gen.setMirrored(mirrored);
+            gen.setRandomHotSpots(randomHotSpots);
             gen.setNumHotSpots(numHotSpots);
             gen.setPercentAccessHotSpots(percentAccessHotSpots);
-            gen.setRandomShift(randomShift);
+	    gen.setRandomShift(randomShift);
             gen.setScrambled(scrambled);
             gen.setShift(shift);
             this.keyGenerator = gen;

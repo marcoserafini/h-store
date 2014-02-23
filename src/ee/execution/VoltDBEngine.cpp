@@ -1518,11 +1518,12 @@ int VoltDBEngine::extractTable(int32_t tableId, ReferenceSerializeInput &seriali
     }
     TableIterator inputIterator = tempExtractTable->tableIterator();
     TableTuple extractTuple(tempExtractTable->schema());
-    while (inputIterator.next(extractTuple)) {
+    if (inputIterator.hasNext()) {
         //TODO ae more than 1 range -> into a single result?
         VOLT_DEBUG("Extract %s ", extractTuple.debugNoHeader().c_str());
 	bool moreData = false;
-        Table* outputTable = m_migrationManager->extractRange(table,extractTuple.getNValue(2),extractTuple.getNValue(3),requestToken, extractTupleLimit, moreData);
+        //Table* outputTable = m_migrationManager->extractRange(table,extractTuple.getNValue(2),extractTuple.getNValue(3),requestToken, extractTupleLimit, moreData);
+        Table* outputTable = m_migrationManager->extractRanges(table,inputIterator,extractTuple,requestToken, extractTupleLimit, moreData);
         size_t lengthPosition = m_resultOutput.reserveBytes(sizeof(int32_t));
         if (outputTable != NULL) {
             outputTable->serializeTo(m_resultOutput);

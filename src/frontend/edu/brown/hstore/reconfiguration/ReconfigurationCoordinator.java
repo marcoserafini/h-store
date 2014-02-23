@@ -500,7 +500,7 @@ public class ReconfigurationCoordinator implements Shutdownable {
         	} else {
         		receiveReconfigurationCompleteFromLeader();
         	}
-        	
+        	LOG.info("Sent reconfig end acknowledgement to site " + i);
         }
     }
     
@@ -587,6 +587,15 @@ public class ReconfigurationCoordinator implements Shutdownable {
         }
     }
 
+    
+    public void pushTuples(int oldPartitionId, int newPartitionId, String table_name, VoltTable vt, Long minInclusive, Long maxExclusive) throws Exception {
+        List<Long> mins = new ArrayList<>();
+        List<Long> maxs = new ArrayList<>();
+        mins.add(minInclusive);
+        maxs.add(maxExclusive);
+        pushTuples(oldPartitionId, newPartitionId, table_name, vt, mins, maxs);
+    }
+    
     /**
      * @param oldPartitionId
      * @param newPartitionId
@@ -594,7 +603,7 @@ public class ReconfigurationCoordinator implements Shutdownable {
      * @param vt
      * @throws Exception
      */
-    public void pushTuples(int oldPartitionId, int newPartitionId, String table_name, VoltTable vt, Long minInclusive, Long maxExclusive) throws Exception {
+    public void pushTuples(int oldPartitionId, int newPartitionId, String table_name, VoltTable vt, List<Long> minInclusive, List<Long> maxExclusive) throws Exception {
         LOG.info(String.format("pushTuples keys (%s-%s] for [%s]  partitions %s->%s", minInclusive, maxExclusive, table_name, oldPartitionId, newPartitionId));
         int destinationId = this.hstore_site.getCatalogContext().getSiteIdForPartitionId(newPartitionId);
 
@@ -613,7 +622,7 @@ public class ReconfigurationCoordinator implements Shutdownable {
             throw new RuntimeException("Unexpected error when serializing Volt Table", ex);
         }
 
-        DataTransferRequest dataTransferRequest = DataTransferRequest.newBuilder().setMinInclusive(minInclusive).setMaxExclusive(maxExclusive).setSenderSite(this.localSiteId)
+        DataTransferRequest dataTransferRequest = DataTransferRequest.newBuilder().addAllMinInclusive(minInclusive).addAllMaxExclusive(maxExclusive).setSenderSite(this.localSiteId)
                 .setOldPartition(oldPartitionId).setNewPartition(newPartitionId).setVoltTableName(table_name).setT0S(System.currentTimeMillis()).setVoltTableData(tableBytes).build();
 
         this.channels[destinationId].dataTransfer(controller, dataTransferRequest, dataTransferRequestCallback);
@@ -628,7 +637,7 @@ public class ReconfigurationCoordinator implements Shutdownable {
      * @param vt
      * @throws Exception
      */
-    public DataTransferResponse receiveTuples(int sourceId, long sentTimeStamp, int partitionId, int newPartitionId, String table_name, VoltTable vt, Long minInclusive, Long maxExclusive)
+    public DataTransferResponse receiveTuples(int sourceId, long sentTimeStamp, int partitionId, int newPartitionId, String table_name, VoltTable vt, List<Long> minInclusive, List<Long> maxExclusive)
             throws Exception {
         LOG.info(String.format("receiveTuples  keys for %s  partIds %s->%s", table_name, partitionId, newPartitionId));
 
@@ -648,7 +657,7 @@ public class ReconfigurationCoordinator implements Shutdownable {
         }
 
         DataTransferResponse response = DataTransferResponse.newBuilder().setNewPartition(newPartitionId).setOldPartition(partitionId).setT0S(sentTimeStamp).setSenderSite(sourceId)
-                .setVoltTableName(table_name).setMinInclusive(minInclusive).setMaxExclusive(maxExclusive).build();
+                .setVoltTableName(table_name).addAllMinInclusive(minInclusive).addAllMaxExclusive(maxExclusive).build();
 
         return response;
     }
@@ -669,7 +678,7 @@ public class ReconfigurationCoordinator implements Shutdownable {
      * @return
      */
     public void dataPullRequest(LivePullRequest livePullRequest, RpcCallback<LivePullResponse> livePullResponseCallback) {
-        LOG.info(String.format("dataPullRequest received livePullId %s  keys %s->%s for %s  partIds %s->%s", livePullRequest.getLivePullIdentifier(), livePullRequest.getMinInclusive(), livePullRequest.getMaxExclusive(), livePullRequest.getVoltTableName(),
+        LOG.info(String.format("dataPullRequest received livePullId %s  keys %s->%s for %s  partIds %s->%s", livePullRequest.getLivePullIdentifier(), livePullRequest.getMinInclusiveList().toString(), livePullRequest.getMaxExclusiveList().toString(), livePullRequest.getVoltTableName(),
                 livePullRequest.getOldPartition(), livePullRequest.getNewPartition()));
         long now=0;
         
@@ -725,7 +734,7 @@ public class ReconfigurationCoordinator implements Shutdownable {
         for(ReconfigurationRange range : pullRequests){       
             
             asyncPullTuples(livePullId, txnId, range.old_partition, range.new_partition, range.table_name, 
-                    range.min_long, range.max_long, range.getVt());
+                    range.getMinList(), range.getMaxList(), range.getVt());
         }
         
     }
@@ -761,7 +770,7 @@ public class ReconfigurationCoordinator implements Shutdownable {
             //FIXME change pullTuples to be generic comparable
             
             pullTuples(livePullId, txnId, range.old_partition, range.new_partition, range.table_name, 
-                    range.min_long, range.max_long, range.getVt());
+                    range.getMinList(), range.getMaxList(), range.getVt());
             blockedRequests.put(livePullId, blockingSemaphore);
             //LOG.error("TODO temp removing sempahore for testing");
             //blockingSemaphore.release();         
@@ -780,7 +789,7 @@ public class ReconfigurationCoordinator implements Shutdownable {
      * @param max_exclusive
      * @param voltType
      */
-    public void pullTuples(int livePullId, Long txnId, int oldPartitionId, int newPartitionId, String table_name, Long min_inclusive, Long max_exclusive, VoltType voltType) {
+    public void pullTuples(int livePullId, Long txnId, int oldPartitionId, int newPartitionId, String table_name, List<Long> min_inclusive, List<Long> max_exclusive, VoltType voltType) {
         LOG.info(String.format("pullTuples with Live Pull ID %s, keys %s->%s for %s  partIds %s->%s", livePullId, min_inclusive, max_exclusive, table_name, oldPartitionId, newPartitionId));
         // TODO : Check if volt type makes can be used here for generic values
         // or remove it
@@ -789,7 +798,7 @@ public class ReconfigurationCoordinator implements Shutdownable {
         ProtoRpcController controller = new ProtoRpcController();
 
         LivePullRequest livePullRequest = LivePullRequest.newBuilder().setLivePullIdentifier(livePullId).setSenderSite(this.localSiteId).setTransactionID(txnId).setOldPartition(oldPartitionId)
-                .setNewPartition(newPartitionId).setVoltTableName(table_name).setMinInclusive(min_inclusive).setMaxExclusive(max_exclusive).setT0S(System.currentTimeMillis()).build();
+                .setNewPartition(newPartitionId).setVoltTableName(table_name).addAllMinInclusive(min_inclusive).addAllMaxExclusive(max_exclusive).setT0S(System.currentTimeMillis()).build();
 
         if (sourceID == localSiteId) {
             LOG.debug("pulling from localsite");
@@ -816,14 +825,14 @@ public class ReconfigurationCoordinator implements Shutdownable {
      * @param max_exclusive
      * @param voltType
      */
-    public void asyncPullTuples(int livePullId, Long txnId, int oldPartitionId, int newPartitionId, String table_name, Long min_inclusive, Long max_exclusive, VoltType voltType) {
+    public void asyncPullTuples(int livePullId, Long txnId, int oldPartitionId, int newPartitionId, String table_name, List<Long> min_inclusive, List<Long> max_exclusive, VoltType voltType) {
         LOG.info(String.format("pullTuples with async Pull ID %s, keys %s->%s for %s  partIds %s->%s", livePullId, min_inclusive, max_exclusive, table_name, oldPartitionId, newPartitionId));
         int sourceID = this.hstore_site.getCatalogContext().getSiteIdForPartitionId(oldPartitionId);
 
         ProtoRpcController controller = new ProtoRpcController();
 
         AsyncPullRequest asyncPullRequest = AsyncPullRequest.newBuilder().setAsyncPullIdentifier(livePullId).setSenderSite(this.localSiteId).setTransactionID(txnId).setOldPartition(oldPartitionId)
-                .setNewPartition(newPartitionId).setVoltTableName(table_name).setMinInclusive(min_inclusive).setMaxExclusive(max_exclusive).setT0S(System.currentTimeMillis()).build();
+                .setNewPartition(newPartitionId).setVoltTableName(table_name).addAllMinInclusive(min_inclusive).addAllMaxExclusive(max_exclusive).setT0S(System.currentTimeMillis()).build();
 
         if (sourceID == localSiteId) {
             LOG.debug("pulling from localsite");
@@ -952,15 +961,10 @@ public class ReconfigurationCoordinator implements Shutdownable {
     	int oldPartitionId = multiPullReplyRequest.getOldPartition();
     	int newPartitionId =  multiPullReplyRequest.getNewPartition();
     	String table_name = multiPullReplyRequest.getVoltTableName();
-    	Long min_inclusive = multiPullReplyRequest.getMinInclusive(); 
-        Long max_exclusive = multiPullReplyRequest.getMaxExclusive(); 
+    	List<Long> min_inclusive = multiPullReplyRequest.getMinInclusiveList(); 
+        List<Long> max_exclusive = multiPullReplyRequest.getMaxExclusiveList(); 
         int chunkId = multiPullReplyRequest.getChunkId();
-        VoltTable voltTable = null;
-        try {
-        	voltTable = FastDeserializer.deserialize(multiPullReplyRequest.getVoltTableData().toByteArray(), VoltTable.class);
-        } catch (IOException e) {
-            LOG.error("Error in deserializing volt table");
-        }
+        
         boolean moreDataNeeded = multiPullReplyRequest.getMoreDataNeeded();
         long start=0, receive=0, done=0;
         if (detailed_timing){
@@ -1003,8 +1007,8 @@ public class ReconfigurationCoordinator implements Shutdownable {
 
     }
 
-public void receiveLivePullTuples(int livePullId, Long txnId, int oldPartitionId, int newPartitionId, String table_name, Long min_inclusive, 
-		Long max_exclusive, VoltTable voltTable, boolean moreDataNeeded) {
+public void receiveLivePullTuples(int livePullId, Long txnId, int oldPartitionId, int newPartitionId, String table_name, List<Long> min_inclusive, 
+		List<Long> max_exclusive, VoltTable voltTable, boolean moreDataNeeded) {
         
         long start=0, receive=0, done=0;
         if (detailed_timing){
@@ -1175,8 +1179,8 @@ public void receiveLivePullTuples(int livePullId, Long txnId, int oldPartitionId
             // TODO : change the log status later. Info for testing.
             // LOG.info("Volt table Received in callback is "+vt.toString());
 
-            receiveLivePullTuples(msg.getLivePullIdentifier(), msg.getTransactionID(), msg.getOldPartition(), msg.getNewPartition(), msg.getVoltTableName(), msg.getMinInclusive(),
-                    msg.getMaxExclusive(), vt, msg.getMoreDataNeeded());
+            receiveLivePullTuples(msg.getLivePullIdentifier(), msg.getTransactionID(), msg.getOldPartition(), msg.getNewPartition(), msg.getVoltTableName(), msg.getMinInclusiveList(),
+                    msg.getMaxExclusiveList(), vt, msg.getMoreDataNeeded());
             
             // send Acknowledgement 
 
@@ -1376,8 +1380,8 @@ public void receiveLivePullTuples(int livePullId, Long txnId, int oldPartitionId
                 reportProfiler("REPORT_BLOCKED_QUEUE_SIZE_GROWTH",  this.profilers[p_id].pe_block_queue_size_growth, p_id, writeToEventLog);
                 reportProfiler("REPORT_EXTRACT_QUEUE_SIZE_GROWTH",  this.profilers[p_id].pe_extract_queue_size_growth, p_id, writeToEventLog);
                 reportProfiler("REPORT_EXTRACT_PROC_TIME",  this.profilers[p_id].src_extract_proc_time, p_id, writeToEventLog);
-                
-                reportProfiler("REPORT_TOTAL_PULL_SIZE", "KB", livePullKBMap.get(p_id), p_id, writeToEventLog);
+                if(livePullKBMap != null && livePullKBMap.containsKey(p_id))
+                    reportProfiler("REPORT_TOTAL_PULL_SIZE", "KB", livePullKBMap.get(p_id), p_id, writeToEventLog);
 
                 if (detailed_timing) {
                     reportProfiler("REPORT_AVG_SRC_DATA_PULL_INIT",this.profilers[p_id].src_data_pull_req_init_time, p_id, writeToEventLog);

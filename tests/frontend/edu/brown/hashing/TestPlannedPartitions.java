@@ -33,6 +33,34 @@ public class TestPlannedPartitions extends BaseTestCase {
             + "                  4 : \"301,303,304-350\"       " + "                }     " + "              }" + "            }" + "          }," + "          \"2\" : {" + "            \"tables\":{"
             + "              \"usertable\":{" + "                \"partitions\":{" + "                  1 : \"1-400\"," + "                }     " + "              }" + "            }"
             + "          }" + "        }" + "}";
+
+    public String test_json2 = "{" + 
+	"       \"default_table\":\"usertable\"," + 
+	"       \"partition_plans\":{" + 
+	"          \"1\" : {" + 
+	"            \"tables\":{" + 
+	"              \"usertable\":{" + 
+	"                \"partitions\":{" + 
+	"                  1 : \"1-100\"," + 
+	"                  2 : \"100-300\"," + 
+	"                  3 : \"300-400,500-10000,12000-13000\"," + 
+	"                  4 : \"400-500,10000-12000\"       " + 
+	"                }     " + 
+	"              }" + 
+	"            }" + 
+	"          }," + 
+	"          \"2\" : {" + 
+	"            \"tables\":{" + 
+	"              \"usertable\":{" + 
+	"                \"partitions\":{" + 
+	"                  1 : \"1-13000\"," + 
+	"                }     " + 
+	"              }" + 
+	"            }" + 
+	"          }" + 
+	"        }" + 
+	"}";
+
     private File json_path;
 
     @Override
@@ -63,7 +91,7 @@ public class TestPlannedPartitions extends BaseTestCase {
         assertTrue(tbls.contains("usertable"));
     }
 
-    public void testBuildTablePartitions() throws Exception {
+    public void testBuildTablePartitions1() throws Exception {
         JSONObject test_json = new JSONObject(test_json1);
         PlannedPartitions p = new PlannedPartitions(catalogContext, test_json);
         p.setPartitionPhase("1");
@@ -84,7 +112,7 @@ public class TestPlannedPartitions extends BaseTestCase {
         assertEquals(-1, p.getPartitionId("usertable", new Long(0)));
         assertEquals(-1, p.getPartitionId("usertable", new Long(54521)));
 
-        p.setPartitionPhase("2");
+        ReconfigurationPlan plan = p.setPartitionPhase("2");
         assertEquals(1, p.getPartitionId("usertable", new Long(2)));
         assertEquals(1, p.getPartitionId("usertable", new Long(1)));
         assertEquals(1, p.getPartitionId("usertable", new Long(99)));
@@ -101,6 +129,22 @@ public class TestPlannedPartitions extends BaseTestCase {
         assertEquals(1, p.getPartitionId("usertable", new Long(340)));
         assertEquals(-1, p.getPartitionId("usertable", new Long(0)));
         assertEquals(-1, p.getPartitionId("usertable", new Long(54521)));
+
+	// test that merging worked
+	assertEquals(3, plan.incoming_ranges.get(1).size());
+    }
+
+    public void testBuildTablePartitions2() throws Exception {
+        JSONObject test_json = new JSONObject(test_json2);
+        PlannedPartitions p = new PlannedPartitions(catalogContext, test_json);
+        p.setPartitionPhase("1");
+
+        ReconfigurationPlan plan = p.setPartitionPhase("2");
+
+	assertEquals(2, plan.outgoing_ranges.get(3).size());
+	assertEquals(2, plan.outgoing_ranges.get(3).get(0).getMinList().size());
+	assertEquals(300L, plan.outgoing_ranges.get(3).get(0).getMinList().get(0).longValue()); 
+	assertEquals(500L, plan.outgoing_ranges.get(3).get(0).getMinList().get(1).longValue());
     }
 
     public void testPartitionRangeCompare() throws Exception {
@@ -152,16 +196,16 @@ public class TestPlannedPartitions extends BaseTestCase {
         ReconfigurationTable<Integer> reconfig = new ReconfigurationTable<>(old_table, new_table);
         ReconfigurationRange<Integer> range = null;
         range = reconfig.getReconfigurations().get(0);
-        assertTrue(range.min_inclusive == 5 && range.max_exclusive == 7 && range.old_partition == 1 && range.new_partition == 2);
+        assertTrue(range.getMin_inclusive() == 5 && range.getMax_exclusive() == 7 && range.old_partition == 1 && range.new_partition == 2);
 
         range = reconfig.getReconfigurations().get(1);
-        assertTrue(range.min_inclusive == 7 && range.max_exclusive == 10 && range.old_partition == 1 && range.new_partition == 3);
+        assertTrue(range.getMin_inclusive() == 7 && range.getMax_exclusive() == 10 && range.old_partition == 1 && range.new_partition == 3);
 
         range = reconfig.getReconfigurations().get(2);
-        assertTrue(range.min_inclusive == 20 && range.max_exclusive == 25 && range.old_partition == 3 && range.new_partition == 2);
+        assertTrue(range.getMin_inclusive() == 20 && range.getMax_exclusive() == 25 && range.old_partition == 3 && range.new_partition == 2);
 
         range = reconfig.getReconfigurations().get(3);
-        assertTrue(range.min_inclusive == 25 && range.max_exclusive == 26 && range.old_partition == 3 && range.new_partition == 1);
+        assertTrue(range.getMin_inclusive() == 25 && range.getMax_exclusive() == 26 && range.old_partition == 3 && range.new_partition == 1);
     }
 
     public void testPreviousPhase() throws Exception {
@@ -183,10 +227,10 @@ public class TestPlannedPartitions extends BaseTestCase {
         ReconfigurationTable<Integer> reconfig = new ReconfigurationTable<>(old_table, new_table);
         ReconfigurationRange<Integer> range = null;
         range = reconfig.getReconfigurations().get(0);
-        assertTrue(range.min_inclusive == 10 && range.max_exclusive == 20 && range.old_partition == 1 && range.new_partition == 2);
+        assertTrue(range.getMin_inclusive() == 10 && range.getMax_exclusive() == 20 && range.old_partition == 1 && range.new_partition == 2);
 
         range = reconfig.getReconfigurations().get(1);
-        assertTrue(range.min_inclusive == 20 && range.max_exclusive == 30 && range.old_partition == 1 && range.new_partition == 3);
+        assertTrue(range.getMin_inclusive() == 20 && range.getMax_exclusive() == 30 && range.old_partition == 1 && range.new_partition == 3);
     }
 
     public void testReconfigurationTable3() throws Exception {
@@ -205,10 +249,10 @@ public class TestPlannedPartitions extends BaseTestCase {
         ReconfigurationTable<Integer> reconfig = new ReconfigurationTable<>(new_table, old_table);
         ReconfigurationRange<Integer> range = null;
         range = reconfig.getReconfigurations().get(0);
-        assertTrue(range.min_inclusive == 10 && range.max_exclusive == 20 && range.old_partition == 2 && range.new_partition == 1);
+        assertTrue(range.getMin_inclusive() == 10 && range.getMax_exclusive() == 20 && range.old_partition == 2 && range.new_partition == 1);
 
         range = reconfig.getReconfigurations().get(1);
-        assertTrue(range.min_inclusive == 20 && range.max_exclusive == 30 && range.old_partition == 3 && range.new_partition == 1);
+        assertTrue(range.getMin_inclusive() == 20 && range.getMax_exclusive() == 30 && range.old_partition == 3 && range.new_partition == 1);
     }
 
     @SuppressWarnings("unchecked")
@@ -235,22 +279,22 @@ public class TestPlannedPartitions extends BaseTestCase {
         ReconfigurationTable<Integer> reconfig = (ReconfigurationTable<Integer>) reconfig_plan.tables_map.get("table");
         ReconfigurationRange<Integer> range = null;
         range = reconfig.getReconfigurations().get(0);
-        assertTrue(range.min_inclusive == 10 && range.max_exclusive == 20 && range.old_partition == 1 && range.new_partition == 2);
+        assertTrue(range.getMin_inclusive() == 10 && range.getMax_exclusive() == 20 && range.old_partition == 1 && range.new_partition == 2);
 
         range = reconfig.getReconfigurations().get(1);
-        assertTrue(range.min_inclusive == 20 && range.max_exclusive == 30 && range.old_partition == 1 && range.new_partition == 3);
+        assertTrue(range.getMin_inclusive() == 20 && range.getMax_exclusive() == 30 && range.old_partition == 1 && range.new_partition == 3);
 
         range = (ReconfigurationRange<Integer>) reconfig_plan.incoming_ranges.get(2).get(0);
-        assertTrue(range.min_inclusive == 10 && range.max_exclusive == 20 && range.old_partition == 1 && range.new_partition == 2);
+        assertTrue(range.getMin_inclusive() == 10 && range.getMax_exclusive() == 20 && range.old_partition == 1 && range.new_partition == 2);
 
         range = (ReconfigurationRange<Integer>) reconfig_plan.outgoing_ranges.get(1).get(0);
-        assertTrue(range.min_inclusive == 10 && range.max_exclusive == 20 && range.old_partition == 1 && range.new_partition == 2);
+        assertTrue(range.getMin_inclusive() == 10 && range.getMax_exclusive() == 20 && range.old_partition == 1 && range.new_partition == 2);
 
         range = (ReconfigurationRange<Integer>) reconfig_plan.outgoing_ranges.get(1).get(1);
-        assertTrue(range.min_inclusive == 20 && range.max_exclusive == 30 && range.old_partition == 1 && range.new_partition == 3);
+        assertTrue(range.getMin_inclusive() == 20 && range.getMax_exclusive() == 30 && range.old_partition == 1 && range.new_partition == 3);
 
         range = (ReconfigurationRange<Integer>) reconfig_plan.incoming_ranges.get(3).get(0);
-        assertTrue(range.min_inclusive == 20 && range.max_exclusive == 30 && range.old_partition == 1 && range.new_partition == 3);
+        assertTrue(range.getMin_inclusive() == 20 && range.getMax_exclusive() == 30 && range.old_partition == 1 && range.new_partition == 3);
 
     }
 }

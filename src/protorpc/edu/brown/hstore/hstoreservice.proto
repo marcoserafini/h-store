@@ -517,9 +517,9 @@ message DataTransferRequest {
     required string volt_table_name = 5; 
     // This is the minimum inclusive range for the pull
     // Set to long for now, generalize later  
-    required int64 min_inclusive = 6;
+    repeated int64 min_inclusive = 6 [packed=true];
     // This is the maximum exclusive range for the pull 
-    required int64 max_exclusive = 7;
+    repeated int64 max_exclusive = 7 [packed=true];
     // This is the data (in form of serialized volt table)
     required bytes volt_table_data = 8; 
 }
@@ -537,9 +537,9 @@ message DataTransferResponse {
     required string volt_table_name = 5; 
     // This is the minimum inclusive range for the pull
     // Set to long for now, generalize later  
-    required int64 min_inclusive = 6;
+    repeated int64 min_inclusive = 6  [packed=true];
     // This is the maximum exclusive range for the pull 
-    required int64 max_exclusive = 7;
+    repeated int64 max_exclusive = 7 [packed=true];
 }
 
 //------------------------------------
@@ -563,9 +563,9 @@ message LivePullRequest {
     required string volt_table_name = 7; 
     // This is the minimum inclusive range for the pull
     // Set to long for now, generalize later  
-    required int64 min_inclusive = 8;
+    repeated int64 min_inclusive = 8 [packed=true];
     // This is the maximum exclusive range for the pull 
-    required int64 max_exclusive = 9;
+    repeated int64 max_exclusive = 9 [packed=true];
 }
 
 message LivePullResponse {
@@ -587,9 +587,9 @@ message LivePullResponse {
     required string volt_table_name = 7; 
     // This is the minimum inclusive range for the pull
     // Set to long for now, generalize later
-    required int64 min_inclusive = 8;
+    repeated int64 min_inclusive = 8 [packed=true];
     // This is the maximum exclusive range for the pull 
-    required int64 max_exclusive = 9;
+    repeated int64 max_exclusive = 9 [packed=true];
     // This is the data returned (in form of serialized volt table)
     required bytes volt_table_data = 10;
     //This  indicates whether more data is still left ot be pulled
@@ -618,9 +618,9 @@ message AsyncPullRequest {
     required string volt_table_name = 7; 
     // This is the minimum inclusive range for the pull
     // Set to long for now, generalize later  
-    required int64 min_inclusive = 8;
+    repeated int64 min_inclusive = 8 [packed=true];
     // This is the maximum exclusive range for the pull 
-    required int64 max_exclusive = 9;
+    repeated int64 max_exclusive = 9 [packed=true];
 }
 
 message AsyncPullResponse {
@@ -642,9 +642,9 @@ message AsyncPullResponse {
     required string volt_table_name = 7; 
     // This is the minimum inclusive range for the pull
     // Set to long for now, generalize later
-    required int64 min_inclusive = 8;
+    repeated int64 min_inclusive = 8 [packed=true];
     // This is the maximum exclusive range for the pull 
-    required int64 max_exclusive = 9;
+    repeated int64 max_exclusive = 9 [packed=true];
     // This is the data returned (in form of serialized volt table)
     required bytes volt_table_data = 10;
     //This  indicates whether more data is still left to be pulled
@@ -676,9 +676,9 @@ message MultiPullReplyRequest {
     required string volt_table_name = 9; 
     // This is the minimum inclusive range for the pull
     // Set to long for now, generalize later  
-    required int64 min_inclusive = 10;
+    repeated int64 min_inclusive = 10 [packed=true];
     // This is the maximum exclusive range for the pull 
-    required int64 max_exclusive = 11;
+    repeated int64 max_exclusive = 11 [packed=true];
     // This is the data returned (in form of serialized volt table)
     required bytes volt_table_data = 12;
     //This  indicates whether more data is still left to be pulled
@@ -707,9 +707,9 @@ message MultiPullReplyResponse {
     required string volt_table_name = 9; 
     // This is the minimum inclusive range for the pull
     // Set to long for now, generalize later
-    required int64 min_inclusive = 10;
+    repeated int64 min_inclusive = 10 [packed=true];
     // This is the maximum exclusive range for the pull 
-    required int64 max_exclusive = 11;
+    repeated int64 max_exclusive = 11 [packed=true];
 }
 
 //------------------------------------

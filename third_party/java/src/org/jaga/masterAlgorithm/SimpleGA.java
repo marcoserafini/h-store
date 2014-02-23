@@ -56,7 +56,8 @@ public class SimpleGA implements GeneticAlgorithm {
 		while (! terminationConditionApplies(pop, age, result, params)) {
 
 			Individual best = result.getFittestIndividual();
-
+			System.out.println("Fittest individual in generation " + age + " has fitness: " + best.getFitness().toString());
+			
 			Population nextPop = generateNextPopulation(pop, age, result, params);
 
 			pop = nextPop;

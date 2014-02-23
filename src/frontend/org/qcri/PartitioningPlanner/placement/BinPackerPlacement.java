@@ -18,7 +18,7 @@ import org.qcri.PartitioningPlanner.placement.Plan;
 
 public class BinPackerPlacement extends Placement {
 
-	Long coldPartitionWidth = 1000L; // redistribute cold tuples in chunks of 1000
+	Long coldPartitionWidth = 100000L; // redistribute cold tuples in chunks of 100000
 	ArrayList<Long> tupleIds = null;
 	ArrayList<Long> accesses = null; 
 	ArrayList<Integer> locations = null; 
@@ -134,10 +134,11 @@ public class BinPackerPlacement extends Placement {
 		GLPK.intArray_setitem(idxY, 0, 0);
 		GLPK.doubleArray_setitem(idxR, 0, 0);
 
+		getHottestTuple(hotTuplesList);
 		Long meanAccesses = totalAccesses / partitionCount;
 		System.out.println("Mean access count: " + meanAccesses);
 
-		double partitionUpperBound = meanAccesses * 1.05; // slightly over target
+		double partitionUpperBound = Math.max(meanAccesses, _hotAccessCount) * 1.05; // slightly over target
 
 		// one constraint for each partition for load balancing, one for each placement s.t. it appears exactly once
 		GLPK.glp_add_rows(lp, partitionCount + placementCount);

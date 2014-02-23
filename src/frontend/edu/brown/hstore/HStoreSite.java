@@ -835,6 +835,7 @@ public class HStoreSite implements VoltProcedureListener.Handler, Shutdownable, 
        // CPU Usage by Essam
         this.cpuStats = new CPUStats();
         this.statsAgent.registerStatsSource(SysProcSelector.CPUUSAGE, 0, this.cpuStats);
+
         
         // TXN COUNTERS
         statsSource = new TransactionCounterStats(this.catalogContext);
