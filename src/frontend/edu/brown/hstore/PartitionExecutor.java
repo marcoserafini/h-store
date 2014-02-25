@@ -1241,14 +1241,20 @@ public class PartitionExecutor implements Runnable, Configurable, Shutdownable {
 
 		this.work_queue.offer(asyncRequestPullQueue.remove());
 	    }
-            else if (reconfiguration_coordinator.getReconfigurationInProgress() && asyncOutstanding.get() == false && reconfiguration_coordinator.queueAsyncPull() 
+            else if (reconfiguration_coordinator.getReconfigurationInProgress() 
+		    //&& asyncOutstanding.get() == false 
+		    && reconfiguration_coordinator.queueAsyncPull() 
                     && this.scheduleAsyncPullQueue.isEmpty() == false
                     && (idle_click_count > MAX_PULL_ASYNC_EVERY_CLICKS  || System.currentTimeMillis() > this.nextAsyncPullTimeMS )){
                 if (idle_click_count > MAX_PULL_ASYNC_EVERY_CLICKS) {
                     LOG.info(String.format(" ### Pulling and scheduling the next async pull from the scheduleAsyncPullQueue due to IDLE Clicks. Items : %s  IdleCount:%s", scheduleAsyncPullQueue.size(),idle_click_count));
                 } else {
                     LOG.info(String.format(" ### Pulling and scheduling the next async pull from the scheduleAsyncPullQueue due to time. Items : %s  IdleCount:%s", scheduleAsyncPullQueue.size(),idle_click_count));
-                }                
+                }     
+
+		if(asyncOutstanding.get()) {
+		    LOG.warn("Offering async request to the work queue when there is already an async request in progress");
+		}           
 	
                 this.idle_click_count = 0;
 		nextAsyncPullTimeMS = System.currentTimeMillis() + MIN_MS_BETWEEN_ASYNC_PULLS;
@@ -1258,7 +1264,7 @@ public class PartitionExecutor implements Runnable, Configurable, Shutdownable {
                     asyncOutstanding.set(true);
                 }
             }
-            
+
             if (this.currentDtxn != null) {
                 return processQueuedLiveReconfigWork(true);
             }          

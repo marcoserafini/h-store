@@ -29,9 +29,9 @@ import edu.brown.utils.FileUtil;
  * 
  */
 @ProcInfo(singlePartition = false)
-public class Reconfiguration extends VoltSystemProcedure {
+public class ReconfigurationRemote extends VoltSystemProcedure {
 
-  private static final Logger LOG = Logger.getLogger(Reconfiguration.class);
+  private static final Logger LOG = Logger.getLogger(ReconfigurationRemote.class);
 
   public static final ColumnInfo nodeResultsColumns[] = { new ColumnInfo("SITE", VoltType.INTEGER) };
 
@@ -42,8 +42,8 @@ public class Reconfiguration extends VoltSystemProcedure {
    */
   @Override
   public void initImpl() {
-    executor.registerPlanFragment(SysProcFragmentId.PF_reconfigurationDistribute, this);
-    executor.registerPlanFragment(SysProcFragmentId.PF_reconfigurationAggregate, this);
+    executor.registerPlanFragment(SysProcFragmentId.PF_reconfigurationRemoteDistribute, this);
+    executor.registerPlanFragment(SysProcFragmentId.PF_reconfigurationRemoteAggregate, this);
   }
 
   /*
@@ -64,9 +64,9 @@ public class Reconfiguration extends VoltSystemProcedure {
     int currentPartitionId = context.getPartitionExecutor().getPartitionId();
     switch (fragmentId) {
 
-    case SysProcFragmentId.PF_reconfigurationDistribute: {
+    case SysProcFragmentId.PF_reconfigurationRemoteDistribute: {
       try {
-        hstore_site.getReconfigurationCoordinator().initReconfigurationLocal(coordinator, reconfig_protocol, partition_plan, currentPartitionId);
+        hstore_site.getReconfigurationCoordinator().initReconfiguration(coordinator, reconfig_protocol, partition_plan, currentPartitionId);
       } catch (Exception ex) {
         throw new ServerFaultException(ex.getMessage(), txn_id);
       }
@@ -75,17 +75,17 @@ public class Reconfiguration extends VoltSystemProcedure {
 
       vt.addRow(hstore_site.getSiteId());
 
-      result = new DependencySet(SysProcFragmentId.PF_reconfigurationDistribute, vt);
+      result = new DependencySet(SysProcFragmentId.PF_reconfigurationRemoteDistribute, vt);
       break;
     }
-    case SysProcFragmentId.PF_reconfigurationAggregate: {
+    case SysProcFragmentId.PF_reconfigurationRemoteAggregate: {
       LOG.info("Combining results");
       try {
           hstore_site.getReconfigurationCoordinator().reconfigurationSysProcTerminate();
         } catch (Exception ex) {
           throw new ServerFaultException(ex.getMessage(), txn_id);
         }
-      List<VoltTable> siteResults = dependencies.get(SysProcFragmentId.PF_reconfigurationDistribute);
+      List<VoltTable> siteResults = dependencies.get(SysProcFragmentId.PF_reconfigurationRemoteDistribute);
       if (siteResults == null || siteResults.isEmpty()) {
         String msg = "Missing site results";
         throw new ServerFaultException(msg, txn_id);
@@ -95,7 +95,7 @@ public class Reconfiguration extends VoltSystemProcedure {
       if (reconfig_protocol == ReconfigurationProtocols.STOPCOPY){
           FileUtil.appendEventToFile("RECONFIGURATION_" + ReconfigurationState.END.toString());
       }
-      result = new DependencySet(SysProcFragmentId.PF_reconfigurationAggregate, vt);
+      result = new DependencySet(SysProcFragmentId.PF_reconfigurationRemoteAggregate, vt);
       break;
     }
     default:
@@ -115,7 +115,7 @@ public class Reconfiguration extends VoltSystemProcedure {
     ParameterSet params = new ParameterSet();
 
     params.setParameters(coordinator, partition_plan, protocol);
-    return this.executeOncePerSite(SysProcFragmentId.PF_reconfigurationDistribute, SysProcFragmentId.PF_reconfigurationAggregate,
+    return this.executeOncePerSite(SysProcFragmentId.PF_reconfigurationRemoteDistribute, SysProcFragmentId.PF_reconfigurationRemoteAggregate,
         params);
   }
 }

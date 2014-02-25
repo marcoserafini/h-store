@@ -43,14 +43,14 @@ public class TwoTieredRangeHasher extends DefaultHasher {
     /**
      * Update the current partition plan
      * 
-     * @param partition_plan - the file containing the new plan
+     * @param partition_plan - the new plan
      * @return The delta, or null if there was no change
      * @throws Exception
      */
-    public ReconfigurationPlan changePartitionPlan(String partition_json_file) throws Exception {
+    public ReconfigurationPlan changePartitionPlan(String partition_plan) throws Exception {
     	try {
-            if(partition_json_file != null) {
-            	JSONObject partition_json = new JSONObject(FileUtil.readFile(partition_json_file));
+            if(partition_plan != null) {
+            	JSONObject partition_json = new JSONObject(partition_plan);
             	return partitions.setPartitionPlan(partition_json);
             } else {
                 LOG.error("Attempt to change partition plan without plan file");

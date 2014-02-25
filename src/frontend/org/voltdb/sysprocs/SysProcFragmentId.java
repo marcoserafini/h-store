@@ -199,4 +199,8 @@ public class SysProcFragmentId {
     // @StopCopy
     public static final int PF_stopCopyDistribute = 404;
     public static final int PF_stopCopyAggregate = 405;
+
+    // @ReconfigurationRemote 
+    public static final int PF_reconfigurationRemoteDistribute = 406;
+    public static final int PF_reconfigurationRemoteAggregate = 407;
 }
