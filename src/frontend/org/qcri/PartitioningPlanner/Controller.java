@@ -174,12 +174,16 @@ public class Controller implements Runnable {
 			// here we get load per site
 			ttExecutor.getSiteLoadPerPart(no_of_partitions,mSiteLoad);
 
-			System.out.println("Got list of hot tuples");	
+			System.out.println("Got list of hot tuples");
+
+			for(Map.Entry<Integer,Long> e : mSiteLoad.entrySet()){
+				System.out.println("Partition " + e.getKey() + " accesses " + e.getValue());
+			}
 
 			// here we call the planner
 			// @todo - last parameter should be the number of partitions in use - may be less than
 			// hotTuplesList.size()
-
+/*
 			if(doProvisioning == 1)
 			{
 
@@ -227,6 +231,7 @@ public class Controller implements Runnable {
 				System.exit(1);
 			}
 
+*/
 		} catch(Exception e) {
 			System.out.println("Caught on exception " + e.toString());
 		}
