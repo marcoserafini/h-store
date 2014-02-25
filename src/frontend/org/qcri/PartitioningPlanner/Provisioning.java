@@ -154,6 +154,8 @@ public class Provisioning {
 		double[] res = new double [numPartitions];
 //		System.out.println("Polling " + ip);
 		String results = ShellTools.cmd("ssh " + ip + " top -H -b -n 1 | grep java | head -n " + numPartitions);
+		// TODO: test the following to avoid the ugly fix. the problem is related with using top and cut together http://nurkiewicz.blogspot.com/2012/08/which-java-thread-consumes-my-cpu.html
+//		String results = ShellTools.cmd("ssh " + ip + " top -H -b -n 1 | grep -m " + numPartitions + " java | perl -pe 's/\\e\\[?.*?[\\@-~] ?//g'  | cut -d' ' -f 14");
 		String[] lines = results.split("\n");
 		if (lines.length < numPartitions){
 			System.out.println("Controller: Problem while polling CPU usage for host " + ip);
@@ -162,13 +164,15 @@ public class Provisioning {
 		}
 //		System.out.println("CPU usage of host " + ip + ":");
 		for (int i = 0; i < lines.length; ++i){
+			//TODO should simply to the following (with todo above)
+			//res[i] = Double.parseDouble(lines[i]);
 			String[] fields = lines[i].split("\\s+");
 			try{
 				res[i] = Double.parseDouble(fields[8]);
 //				System.out.println("Partition " + i + " " + res[i]);
 			} catch(NumberFormatException e){
 				// sometimes the first field is an empty string so the cpu utilization is not number 8 
-				// this is a dirty fix but it's good enough for now
+				// this is a dirty fix but it's good enough for now - see the TODO above
 				try{
 					res[i] = Double.parseDouble(fields[9]);
 				}
