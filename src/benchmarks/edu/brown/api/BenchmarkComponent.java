@@ -1286,7 +1286,7 @@ public abstract class BenchmarkComponent {
         	if(m_incrementsTxnRate.hasNextLine()){
         		double increment = Double.parseDouble(m_incrementsTxnRate.nextLine());
         		if (increment != 1){
-        			LOG.info("Thread " + Thread.currentThread() 
+        			LOG.debug("Thread " + Thread.currentThread() 
         					+ " modify load by factor of " + increment 
 //        					+ " for counter " + counter
 //        					+ " txn rate " + m_txnRate 
