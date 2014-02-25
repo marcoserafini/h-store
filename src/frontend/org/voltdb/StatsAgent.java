@@ -22,7 +22,6 @@ import java.util.HashSet;
 
 import org.apache.log4j.Logger;
 
-import edu.brown.hstore.stats.TransactionRTStats;
 import edu.brown.logging.LoggerUtil;
 import edu.brown.logging.LoggerUtil.LoggerBoolean;
 
