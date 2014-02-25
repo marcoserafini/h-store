@@ -24,7 +24,7 @@ public class Provisioning {
 	private Collection<Site> sites;
 
 	double avgCPUUtil;
-	private int usedSites;
+	private int usedPartitions;
 
 	public Provisioning(Collection<Site> sites, int initialPartitions, int sitesPerHost, int partitionsPerSite, double highCPU, double lowCPU){
 		this.sites = sites;
@@ -33,17 +33,20 @@ public class Provisioning {
 		this.SITES_PER_HOST = sitesPerHost;
 		this.PARTITIONS_PER_SITE = partitionsPerSite;
 		this.MAX_SITES = sites.size();
-		usedSites = (int) Math.floor((double) initialPartitions/ (double) partitionsPerSite); 
+		this.usedPartitions = initialPartitions; 
 	}
 
 	public boolean needReconfiguration(){
 		for(Site site : sites){
-			if(site.getId() < usedSites){
+			if(site.getId() < (usedPartitions/PARTITIONS_PER_SITE)){
 				System.out.println("Polling site " + site.getId() + " with IP " + site.getHost().getIpaddr());
 				double[] CPUUtilPerPartition = getCPUPerPartitionSsh(site.getHost().getIpaddr(), PARTITIONS_PER_SITE);
 				for(int i = 0; i <  CPUUtilPerPartition.length; i++){
 					System.out.println("Examining partition " + i + " with load " + CPUUtilPerPartition[i]);
-					if ((CPUUtilPerPartition[i] < CPU_THRESHOLD_DOWN && sitesRequired() < usedSites) || CPUUtilPerPartition[i] > CPU_THRESHOLD_UP) return true;
+					if ((CPUUtilPerPartition[i] < CPU_THRESHOLD_DOWN && partitionsRequired() < usedPartitions) || CPUUtilPerPartition[i] > CPU_THRESHOLD_UP){
+						System.out.println("Need to reconfigure");	 					
+						return true;
+					}
 				}
 			}
 		}
@@ -54,11 +57,11 @@ public class Provisioning {
 	// assumes that site 0-7 go to server 0, 8-15 to server 2 and so on
 	// and one partition per server
 	//
-	public int sitesRequired(){
+	public int partitionsRequired(){
 		double totalUtil = 0;
 
 		for(Site site : sites){
-			if(site.getId() < usedSites){
+			if(site.getId() < (usedPartitions/PARTITIONS_PER_SITE)){
 				double[] CPUUtilPerPartition = getCPUPerPartitionSsh(site.getHost().getIpaddr(), PARTITIONS_PER_SITE);
 				for(int i = 0; i <  CPUUtilPerPartition.length; i++){
 					totalUtil += CPUUtilPerPartition[i];
@@ -66,31 +69,34 @@ public class Provisioning {
 			}
 		}
 		
-		int currentPartitions = usedSites * PARTITIONS_PER_SITE;
-		double avgUtilPerPartition = totalUtil/currentPartitions;
+		double avgUtilPerPartition = totalUtil/usedPartitions;
 
 		if(avgUtilPerPartition > CPU_THRESHOLD_UP){
-			double newPartitions = currentPartitions + Math.ceil((avgUtilPerPartition - CPU_THRESHOLD_UP) * currentPartitions);
+			double newPartitions = usedPartitions + Math.ceil((avgUtilPerPartition - CPU_THRESHOLD_UP) * usedPartitions);
 			int newSites =(int) Math.ceil(newPartitions / PARTITIONS_PER_SITE);
 			// round up considering site per host
 			if (newSites % SITES_PER_HOST != 0){
 				newSites += SITES_PER_HOST - (newSites % SITES_PER_HOST);
 			}
-			usedSites = Math.min(newSites, MAX_SITES);
+			return Math.min(newSites, MAX_SITES) * PARTITIONS_PER_SITE;
 		}
 		else if(avgUtilPerPartition < CPU_THRESHOLD_DOWN){
-			double newPartitions = Math.max(currentPartitions - Math.ceil((CPU_THRESHOLD_DOWN - avgUtilPerPartition) * currentPartitions), PARTITIONS_PER_SITE);
+			double newPartitions = Math.max(usedPartitions - Math.ceil((CPU_THRESHOLD_DOWN - avgUtilPerPartition) * usedPartitions), PARTITIONS_PER_SITE);
 			int newSites = (int) Math.ceil(newPartitions / PARTITIONS_PER_SITE);
 			// round up considering site per host
 			if (newSites % SITES_PER_HOST != 0){
 				newSites += SITES_PER_HOST - (newSites % SITES_PER_HOST);
 			}
-			usedSites = Math.max(newSites, 1);
+			return Math.max(newSites, 1) * PARTITIONS_PER_SITE;
 		}
 //		System.out.println("Provisioning returns " + usedSites + " sites");
-		return usedSites;
+		return usedPartitions;
 	}
 	
+	public void setPartitions(int partitions){
+		usedPartitions = partitions;
+	}
+
 	public void refreshCPUStats(){
 		for(Site site : sites){
 			getCPUPerPartitionSsh(site.getHost().getIpaddr(), PARTITIONS_PER_SITE);
@@ -148,6 +154,8 @@ public class Provisioning {
 		double[] res = new double [numPartitions];
 //		System.out.println("Polling " + ip);
 		String results = ShellTools.cmd("ssh " + ip + " top -H -b -n 1 | grep java | head -n " + numPartitions);
+		// TODO: test the following to avoid the ugly fix. the problem is related with using top and cut together http://nurkiewicz.blogspot.com/2012/08/which-java-thread-consumes-my-cpu.html
+//		String results = ShellTools.cmd("ssh " + ip + " top -H -b -n 1 | grep -m " + numPartitions + " java | perl -pe 's/\\e\\[?.*?[\\@-~] ?//g'  | cut -d' ' -f 14");
 		String[] lines = results.split("\n");
 		if (lines.length < numPartitions){
 			System.out.println("Controller: Problem while polling CPU usage for host " + ip);
@@ -156,13 +164,15 @@ public class Provisioning {
 		}
 //		System.out.println("CPU usage of host " + ip + ":");
 		for (int i = 0; i < lines.length; ++i){
+			//TODO should simply to the following (with todo above)
+			//res[i] = Double.parseDouble(lines[i]);
 			String[] fields = lines[i].split("\\s+");
 			try{
 				res[i] = Double.parseDouble(fields[8]);
 //				System.out.println("Partition " + i + " " + res[i]);
 			} catch(NumberFormatException e){
 				// sometimes the first field is an empty string so the cpu utilization is not number 8 
-				// this is a dirty fix but it's good enough for now
+				// this is a dirty fix but it's good enough for now - see the TODO above
 				try{
 					res[i] = Double.parseDouble(fields[9]);
 				}
