@@ -60,7 +60,6 @@ public class RemoteTransaction extends AbstractTransaction {
         LoggerUtil.attachObserver(LOG, debug, trace);
     }
     
-    private final FastIntHistogram touchedPartitions;     // Marco
     
     // ----------------------------------------------------------------------------
     // CALLBACKS
@@ -95,7 +94,6 @@ public class RemoteTransaction extends AbstractTransaction {
         
         CatalogContext catalogContext = hstore_site.getCatalogContext();
         this.rpc_transactionPrefetch = new ProtoRpcController[catalogContext.numberOfPartitions];
-        this.touchedPartitions = new FastIntHistogram (false, catalogContext.numberOfPartitions); // Marco
     }
     
     /**
@@ -160,7 +158,6 @@ public class RemoteTransaction extends AbstractTransaction {
         // one FragmentTaskMessage callback
         assert(this.work_callback != null) :
             "No FragmentTaskMessage callbacks available for txn #" + this.txn_id;
-        this.touchedPartitions.put(partition, 1); // Marco
         super.startRound(partition);
     }
     

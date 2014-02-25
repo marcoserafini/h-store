@@ -104,14 +104,11 @@ import edu.brown.hstore.stats.AntiCacheManagerProfilerStats;
 import edu.brown.hstore.stats.BatchPlannerProfilerStats;
 import edu.brown.hstore.stats.MarkovEstimatorProfilerStats;
 import edu.brown.hstore.stats.PartitionExecutorProfilerStats;
-import edu.brown.hstore.stats.PartitionRates;
 import edu.brown.hstore.stats.SiteProfilerStats;
 import edu.brown.hstore.stats.SpecExecProfilerStats;
 import edu.brown.hstore.stats.TransactionCounterStats;
 import edu.brown.hstore.stats.TransactionProfilerStats;
 import edu.brown.hstore.stats.TransactionQueueManagerProfilerStats;
-import edu.brown.hstore.stats.TransactionRTStats;
-import edu.brown.hstore.stats.CPUStats; //Essam
 import edu.brown.hstore.txns.AbstractTransaction;
 import edu.brown.hstore.txns.DependencyTracker;
 import edu.brown.hstore.txns.LocalTransaction;
@@ -249,9 +246,6 @@ public class HStoreSite implements VoltProcedureListener.Handler, Shutdownable, 
     private final StatsAgent statsAgent = new StatsAgent();
     private TransactionProfilerStats txnProfilerStats;
     private MemoryStats memoryStats;
-    private CPUStats cpuStats; // Essam
-    private TransactionRTStats rtStats; // Marco
-    private PartitionRates partStats; // Marco
     
     // ----------------------------------------------------------------------------
     // NETWORKING STUFF
@@ -832,11 +826,6 @@ public class HStoreSite implements VoltProcedureListener.Handler, Shutdownable, 
         this.memoryStats = new MemoryStats();
         this.statsAgent.registerStatsSource(SysProcSelector.MEMORY, 0, this.memoryStats);
         
-       // CPU Usage by Essam
-        this.cpuStats = new CPUStats();
-        this.statsAgent.registerStatsSource(SysProcSelector.CPUUSAGE, 0, this.cpuStats);
-
-        
         // TXN COUNTERS
         statsSource = new TransactionCounterStats(this.catalogContext);
         this.statsAgent.registerStatsSource(SysProcSelector.TXNCOUNTER, 0, statsSource);
@@ -869,14 +858,6 @@ public class HStoreSite implements VoltProcedureListener.Handler, Shutdownable, 
         statsSource = new BatchPlannerProfilerStats(this, this.catalogContext);
         this.statsAgent.registerStatsSource(SysProcSelector.PLANNERPROFILER, 0, statsSource);
         
-
-        // TRANSACTION RESPONSE TIME COUNTERS - Marco
-        this.rtStats = new TransactionRTStats(hstore_conf.global.nanosecond_latencies);
-        this.statsAgent.registerStatsSource(SysProcSelector.TXNRESPONSETIME, 0, this.rtStats);
-
-        // PARTITION COUNTERS - Marco
-        this.partStats = new PartitionRates(this.catalogContext, getSiteId());
-        this.statsAgent.registerStatsSource(SysProcSelector.PARTITIONRATES, 0, this.partStats);
     }
     
     /**
@@ -1237,11 +1218,6 @@ public class HStoreSite implements VoltProcedureListener.Handler, Shutdownable, 
     
     public MemoryStats getMemoryStatsSource() {
         return (this.memoryStats);
-    }
-    
-    // Essam 
-    public CPUStats getCPUStatsSource() {
-        return (this.cpuStats);
     }
     
     public Collection<TransactionPreProcessor> getTransactionPreProcessors() {
@@ -1806,9 +1782,7 @@ public class HStoreSite implements VoltProcedureListener.Handler, Shutdownable, 
                     HStoreConstants.EMPTY_RESULT,
                     "");
             
-            this.responseSend(cresponse, clientCallback, EstTime.currentTimeMillis(), 0
-            		,null // Marco
-            		);
+            this.responseSend(cresponse, clientCallback, EstTime.currentTimeMillis(), 0);
 
             // Non-blocking....
             Exception error = new Exception("Shutdown command received at " + this.getSiteName());
@@ -1841,9 +1815,7 @@ public class HStoreSite implements VoltProcedureListener.Handler, Shutdownable, 
                     Status.OK,
                     HStoreConstants.EMPTY_RESULT,
                     "");
-            this.responseSend(cresponse, clientCallback, EstTime.currentTimeMillis(), 0
-            		,null // Marco
-            		);
+            this.responseSend(cresponse, clientCallback, EstTime.currentTimeMillis(), 0);
             return (true);
         }
         
@@ -2564,9 +2536,7 @@ public class HStoreSite implements VoltProcedureListener.Handler, Shutdownable, 
                 this.responseSend(cresponse,
                                   ts.getClientCallback(),
                                   ts.getInitiateTime(),
-                                  ts.getRestartCounter()
-                                  ,ts.getProcedure() // Marco
-                                  );
+                                  ts.getRestartCounter());
             }
         } else if (debug.val) { 
             LOG.debug(String.format("%s - Holding the ClientResponse until logged to disk", ts));
@@ -2586,7 +2556,6 @@ public class HStoreSite implements VoltProcedureListener.Handler, Shutdownable, 
             LOG.debug(String.format("Adding ClientResponse for %s from partition %d " +
                       "to processing queue [status=%s, size=%d]",
                       ts, ts.getBasePartition(), cresponse.getStatus(), this.postProcessorQueue.size()));
-        this.rtStats.addResponseTime(ts.getProcedure(), cresponse.getClusterRoundtrip()); // Marco
         this.postProcessorQueue.add(new Object[]{
                                             cresponse,
                                             ts.getClientCallback(),
@@ -2605,12 +2574,8 @@ public class HStoreSite implements VoltProcedureListener.Handler, Shutdownable, 
     public void responseQueue(ClientResponseImpl cresponse,
                               RpcCallback<ClientResponseImpl> clientCallback,
                               long initiateTime,
-                              int restartCounter
-                              , Procedure catalog_proc
-                              ) 
-    { // Marco
-        
-    	this.rtStats.addResponseTime(catalog_proc, cresponse.getClusterRoundtrip()); // Marco
+                              int restartCounter) 
+    { 
         
         this.postProcessorQueue.add(new Object[]{
                                             cresponse,
@@ -2640,9 +2605,7 @@ public class HStoreSite implements VoltProcedureListener.Handler, Shutdownable, 
                                             status,
                                             HStoreConstants.EMPTY_RESULT,
                                             message);
-        this.responseSend(cresponse, clientCallback, initiateTime, 0
-        		,null // Marco
-        		);
+        this.responseSend(cresponse, clientCallback, initiateTime, 0);
     }
     
     /**
@@ -2656,9 +2619,7 @@ public class HStoreSite implements VoltProcedureListener.Handler, Shutdownable, 
     public void responseSend(ClientResponseImpl cresponse,
                              RpcCallback<ClientResponseImpl> clientCallback,
                              long initiateTime,
-                             int restartCounter
-                             ,Procedure catalog_proc // Marco
-                             ) {
+                             int restartCounter) {
         Status status = cresponse.getStatus();
  
         // If the txn committed/aborted, then we can send the response directly back to the
@@ -2685,7 +2646,6 @@ public class HStoreSite implements VoltProcedureListener.Handler, Shutdownable, 
             EstTimeUpdater.update(now);
         }
         cresponse.setClusterRoundtrip((int)(now - initiateTime));
-        if (catalog_proc != null) this.rtStats.addResponseTime(catalog_proc, now - initiateTime); // Marco
         cresponse.setRestartCounter(restartCounter);
         try {
             clientCallback.run(cresponse);
@@ -2815,7 +2775,6 @@ public class HStoreSite implements VoltProcedureListener.Handler, Shutdownable, 
                     if (hstore_conf.site.txn_counters || hstore_conf.site.status_kill_if_hung) {
                         TransactionCounter.COMPLETED.inc(catalog_proc);
                     }
-                    this.partStats.addAccesses(ts.getTouchedPartitions()); // Marco
                     break;
                 case ABORT_USER:
                     if (t_estimator != null) {
