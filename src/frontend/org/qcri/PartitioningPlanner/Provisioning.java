@@ -25,6 +25,7 @@ public class Provisioning {
 	private final int PARTITIONS_PER_SITE;
 	private final int MAX_SITES;
 	private Collection<Site> sites;
+	private HashMap <Integer,Integer> executorPIDs = new HashMap<Integer,Integer>();
 
 	double avgCPUUtil;
 	private int usedPartitions;
@@ -36,7 +37,19 @@ public class Provisioning {
 		this.SITES_PER_HOST = sitesPerHost;
 		this.PARTITIONS_PER_SITE = partitionsPerSite;
 		this.MAX_SITES = sites.size();
-		this.usedPartitions = initialPartitions; 
+		this.usedPartitions = initialPartitions;
+		for(Site site : sites){
+		     String ip = site.getHost().getIpaddr();
+		    for(Partition part : site.getPartitions()){
+                String command = "ssh -t -t %s top -n1 | grep -m1 java | perl -pe 's/\\e\\[?.*?[\\@-~] ? ?//g' 2> /dev/null | cut -f1 -d' '";
+                String pid = ShellTools.cmd(command);
+                // in two steps since the % of printf confuses String.format
+                String jstack = String.format("$(jstack %s | grep -m1 \"H%02d-%03d\" | cut -d '=' -f 4 | cut -d ' ' -f 1)", pid, site.getId(), part.getId()); 
+                command = "ssh -t -t " + ip + "printf '%d' " + jstack;
+		        String result = ShellTools.cmd(command);
+		        executorPIDs.put(part.getId(), Integer.parseInt(result));
+		    }
+		}
 	}
 
 	public boolean needReconfiguration(Map<Site,Map<Partition,Double>> CPUUtilPerPartitionMap){
@@ -122,19 +135,26 @@ public class Provisioning {
 
 	// ======== THE FOLLOWING METHODS USE SSH AND PS TO GET CPU UTILIZATION =================
 
-	public static Map<Partition,Double> getCPUPerPartitionSsh(Site site){
+	public Map<Partition,Double> getCPUPerPartitionSsh(Site site){
 		String ip = site.getHost().getIpaddr();
 		CatalogMap<Partition> partitions = site.getPartitions();
 		HashMap<Partition,Double> res = new HashMap<Partition,Double>();
+        String command = String.format("ssh -t -t " + ip + " top -H -n1 | grep java");
+        String result = ShellTools.cmd(command);
 		for(Partition part : partitions){
 //			System.out.format("Polling site %d and partition %d with ip %s", site.getId(), part.getId(), ip);
-			// TODO use an environment variable $HSTORE_HOME in the command. to be used when .bashrc becomes accessible
 			// TODO very system specific. it should parse all "lines" entries and find the one with "java"
-			// TODO should split the script into (i) one script that finds the PID of the threads per partition and (ii) one command that calls top and grep (from java)
-			String command = String.format("ssh -t -t %s $HSTORE_HOME/scripts/partitioning/cpu_partition_monitor.sh %02d %03d", ip, site.getId(), part.getId());
-			String result = ShellTools.cmd(command);
 			String[] lines = result.split("\n");
-            String[] fields = lines[1].split("\\s+");
+			String[] fields = null;
+			for (int i = 0; i < lines.length; i++){
+			    if(lines[i].indexOf(executorPIDs.get(part.getId())) != -1){
+			        fields = lines[i].split("\\s+");
+			        break;
+			    }
+			}
+			if(fields == null){
+			    System.out.println("top has no entry for partition id " + part.getId() + " and PID " + executorPIDs.get(part.getId()));
+			}
             try{
                     res.put(part, Double.parseDouble(fields[8]));
             } catch(NumberFormatException e){
