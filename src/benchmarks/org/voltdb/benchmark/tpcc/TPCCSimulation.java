@@ -51,14 +51,19 @@
 package org.voltdb.benchmark.tpcc;
 
 import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.NavigableMap;
 import java.util.Random;
+import java.util.Scanner;
+import java.util.TreeMap;
 
 import org.apache.commons.collections15.map.ListOrderedMap;
 import org.apache.log4j.Logger;
+import org.jfree.util.Log;
 import org.voltdb.CatalogContext;
 import org.voltdb.benchmark.Clock;
 import org.voltdb.catalog.Partition;
@@ -119,7 +124,12 @@ public class TPCCSimulation {
     private int temporal_counter = 0;
     private final FastIntHistogram lastWarehouseHistory = new FastIntHistogram(true);
     private final FastIntHistogram totalWarehouseHistory = new FastIntHistogram(true);
-
+    
+    // Marco - begin
+    NavigableMap<Double, Short> warehouseMap;
+    double maxRate;
+    // Marco - end
+    
     public TPCCSimulation(TPCCSimulation.ProcCaller client, RandomGenerator generator,
                           Clock clock, ScaleParameters parameters, TPCCConfig config, double skewFactor,
                           CatalogContext catalogContext) {
@@ -131,7 +141,30 @@ public class TPCCSimulation {
         this.affineWarehouse = lastAssignedWarehouseId;
         this.skewFactor = skewFactor;
         this.config = config;
-
+        
+        // Marco - begin
+        Scanner txnBalance = null;
+        try {
+            txnBalance = new Scanner(Paths.get("txnbalance.txt"));
+        } catch (IOException e) {
+            Log.info("File txnbalance.txt not found.");
+        }
+        if(txnBalance != null){
+            warehouseMap = new TreeMap<Double, Short>();
+            short currPartition = (short) parameters.starting_warehouse;
+            double lastInterval = 0;
+            while(txnBalance.hasNext()){
+                double thisInterval = Double.parseDouble(txnBalance.next());
+                System.out.println("CurrPartition " + currPartition + " interval " + lastInterval);
+                warehouseMap.put(lastInterval, currPartition ++);
+                lastInterval = thisInterval;
+            }
+            maxRate = lastInterval;
+            currPartition--;
+            assert(currPartition <= parameters.last_warehouse) : String.format("txnbalance has entries for too many warehouses: %d [max=%d]", currPartition, parameters.last_warehouse);
+        }
+        // Marco - end
+        
         if (config.neworder_skew_warehouse) {
             if (debug.val) LOG.debug("Enabling W_ID Zipfian Skew: " + skewFactor);
             this.zipf = new RandomDistribution.Zipf(new Random(),
@@ -239,8 +272,15 @@ public class TPCCSimulation {
     private short generateWarehouseId() {
         short w_id = -1;
         
+        // Marco - begin
+        if(warehouseMap != null){
+            double guess = generator.rng().nextDouble() * maxRate;
+            w_id = warehouseMap.floorEntry(guess).getValue();
+        }
+        // Marco - end
+        
         // WAREHOUSE AFFINITY
-        if (config.warehouse_affinity) {
+        else if (config.warehouse_affinity) {
             w_id = (short)this.affineWarehouse;
         } 
         // TEMPORAL SKEW
