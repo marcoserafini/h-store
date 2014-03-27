@@ -161,7 +161,7 @@ public class TPCCSimulation {
             }
             maxRate = lastInterval;
             currPartition--;
-            assert(currPartition > parameters.last_warehouse) : String.format("txnbalance has entries for too many warehouses: %d [max=%d]", currPartition, parameters.last_warehouse);
+            assert(currPartition <= parameters.last_warehouse) : String.format("txnbalance has entries for too many warehouses: %d [max=%d]", currPartition, parameters.last_warehouse);
         }
         // Marco - end
         
