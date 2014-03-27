@@ -155,7 +155,7 @@ public class TPCCSimulation {
             double lastInterval = 0;
             while(txnBalance.hasNext()){
                 double thisInterval = Double.parseDouble(txnBalance.next());
-                System.out.println("CurrPartition " + currPartition + " interval " + lastInterval);
+//                System.out.println("CurrPartition " + currPartition + " interval " + lastInterval);
                 warehouseMap.put(lastInterval, currPartition ++);
                 lastInterval = thisInterval;
             }
