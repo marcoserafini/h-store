@@ -33,7 +33,8 @@ public class PartitionRates extends StatsSource {
         LoggerUtil.attachObserver(LOG, debug, trace);
     }
 
-    private FastIntHistogram accessRates = null;
+    private FastIntHistogram currAccessRates = null;
+    private FastIntHistogram totAccessRates = null;
     //	private FastIntHistogram[] affinityMatrix = null;
     private int column_offset;
     private int numberOfPartitions;
@@ -56,8 +57,9 @@ public class PartitionRates extends StatsSource {
         super(SysProcSelector.PARTITIONRATES.name(), false);
         //		LOG.info("Been in PartitionRates constructor");
         numberOfPartitions = catalog.numberOfPartitions;
-        accessRates = new FastIntHistogram(false,numberOfPartitions);
-        //		affinityMatrix = new FastIntHistogram[numberOfPartitions];
+        currAccessRates = new FastIntHistogram(false,numberOfPartitions);
+        totAccessRates = new FastIntHistogram(false,numberOfPartitions);
+               //		affinityMatrix = new FastIntHistogram[numberOfPartitions];
         //		for (int i = 0; i < numberOfPartitions; i++){
         //			affinityMatrix[i] = new FastIntHistogram(false,numberOfPartitions);
         //		}
@@ -88,7 +90,7 @@ public class PartitionRates extends StatsSource {
         }
         for (int i = 0; i < numberOfLocalPartitions; i++){
             if(counts.contains(localPartitions[i])){
-                accessRates.put(localPartitions[i]);
+                currAccessRates.put(localPartitions[i]);
                 //				accessRates.put(part, accessRates.get(part)+1);
             }
 
@@ -106,14 +108,13 @@ public class PartitionRates extends StatsSource {
     class NewRow extends TimerTask{
         @Override
         public void run(){
-            if (currPosTable < TABLE_SIZE){
-                accessesTable[currPosTable++] = accessRates;
-                accessRates = new FastIntHistogram(false,numberOfPartitions);
-            }
-            else{
+            if (currPosTable >= TABLE_SIZE){
                 currPosTable = 0;
                 wrappedTable = true;
             }
+            accessesTable[currPosTable++] = currAccessRates;
+            totAccessRates.put(currAccessRates);
+            currAccessRates = new FastIntHistogram(false,numberOfPartitions);
         }
     }
 
@@ -123,7 +124,8 @@ public class PartitionRates extends StatsSource {
         super.populateColumnSchema(columns);
         this.column_offset = columns.size();
         columns.add(new VoltTable.ColumnInfo("PARTITION_ID", VoltType.BIGINT));
-        columns.add(new VoltTable.ColumnInfo("TOT_ACCESSES (PER TIME INTERVAL OF " + TABLE_ROW_TIME_PERIOD + " MS)", VoltType.STRING));
+        columns.add(new VoltTable.ColumnInfo("ACCESSES (PER TIME INTERVAL OF " + TABLE_ROW_TIME_PERIOD + " MS)", VoltType.STRING));
+        columns.add(new VoltTable.ColumnInfo("TOT_ACCESSES (OVERALL)", VoltType.STRING));
     }
 
     @Override
@@ -164,5 +166,6 @@ public class PartitionRates extends StatsSource {
             }
         }
         rowValues[this.column_offset+1] = str.toString();
+        rowValues[this.column_offset+2] = totAccessRates.get((Integer) rowKey).toString();
     }
 }
