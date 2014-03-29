@@ -81,7 +81,7 @@ public class Controller implements Runnable {
 		// connect to VoltDB server
 		client = ClientFactory.createClient();
 		client.configureBlocking(false);
-//		sites = CatalogUtil.getAllSites(catalog);
+		sites = CatalogUtil.getAllSites(catalog);
 		connectToHost();
 //		provisioning = new Provisioning(sites, no_of_partitions, sitesPerHost, partPerSite, highCPU, lowCPU);
 
