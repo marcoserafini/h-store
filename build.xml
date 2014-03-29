@@ -2580,16 +2580,7 @@ UTILITIES
         <jvmarg value="-Dlog4j.configuration=${basedir}/log4j.properties"/>
         <jvmarg value="-Djava.library.path=${build.dir}/nativelibs:${thirdpartydynlib.dir}" />
         <arg value="catalog.jar=${benchmark.jar}" />
-        <arg value="${numPart}" />
-        <arg value="${tWindow}" />
-        <arg value="${plannerID}" />
-        <arg value="${provisioning}" />
-  	<arg value="${timeLimit}" />
-  	<arg value="${monitoring}" />
-  	<arg value="${sitesPerHost}" />
-  	<arg value="${partPerSite}" />
-  	<arg value="${highCPU}" />
-  	<arg value="${lowCPU}" />
+        <arg value="${planFile}" />
 	&common;
         <classpath refid='project.classpath' />
     <assertions><enable/></assertions>

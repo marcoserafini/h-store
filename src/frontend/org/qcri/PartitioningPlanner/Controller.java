@@ -47,115 +47,115 @@ public class Controller implements Runnable {
 	private String connectedHost;
 	private Collection<Site> sites;
 
-	private Placement algo;
-	private Plan currentPlan;
-	private Path planFile;
-	private Path outputPlanFile;
+//	private Placement algo;
+//	private Plan currentPlan;
+	private static Path planFile;
+//	private Path outputPlanFile;
 
 
-	private TupleTrackerExecutor ttExecutor;
-	private Provisioning provisioning;
-	private Map<Site,Map<Partition,Double>> CPUUtilPerPartitionMap;
+//	private TupleTrackerExecutor ttExecutor;
+//	private Provisioning provisioning;
+//	private Map<Site,Map<Partition,Double>> CPUUtilPerPartitionMap;
 
-	private static final int POLL_FREQUENCY = 3000;
+//	private static final int POLL_FREQUENCY = 3000;
 
-	private static int time_window = 10; // time window for tuple tracking
+//	private static int time_window = 10; // time window for tuple tracking
 
-	private static int planner_selector = 0; // planner ID from 0 to 6, Greedy - GreedyEx - FFit - BP - BP one tier - GA - GreedyEx one tier
+//	private static int planner_selector = 0; // planner ID from 0 to 6, Greedy - GreedyEx - FFit - BP - BP one tier - GA - GreedyEx one tier
 
-	private static int no_of_partitions = 4; 
-	private static int doProvisioning = 0;
-	private static int timeLimit = 60000; // 1 minute
-	private static int doMonitoring = 0;
-	private static int sitesPerHost = 1;
-	private static int partPerSite = 1;
-	private static double highCPU = 160;
-	private static double lowCPU = 110;
+//	private static int no_of_partitions = 4; 
+//	private static int doProvisioning = 0;
+//	private static int timeLimit = 60000; // 1 minute
+//	private static int doMonitoring = 0;
+//	private static int sitesPerHost = 1;
+//	private static int partPerSite = 1;
+//	private static double highCPU = 160;
+//	private static double lowCPU = 110;
 
 
 	// used HStoreTerminal as model to handle the catalog
 
 	public Controller (Catalog catalog, HStoreConf hstore_conf){
 
-		ttExecutor = new TupleTrackerExecutor();
+//		ttExecutor = new TupleTrackerExecutor();
 		// connect to VoltDB server
 		client = ClientFactory.createClient();
 		client.configureBlocking(false);
-		sites = CatalogUtil.getAllSites(catalog);
+//		sites = CatalogUtil.getAllSites(catalog);
 		connectToHost();
-		provisioning = new Provisioning(sites, no_of_partitions, sitesPerHost, partPerSite, highCPU, lowCPU);
+//		provisioning = new Provisioning(sites, no_of_partitions, sitesPerHost, partPerSite, highCPU, lowCPU);
 
-		if(hstore_conf.global.hasher_plan == null){
-			System.out.println("Must set global.hasher_plan to specify plan file!");
-			System.out.println("Using default (plan.json)");
-			planFile = FileSystems.getDefault().getPath("plan.json");
+//		if(hstore_conf.global.hasher_plan == null){
+//			System.out.println("Must set global.hasher_plan to specify plan file!");
+//			System.out.println("Using default (plan.json)");
+//			planFile = FileSystems.getDefault().getPath("plan.json");
+//
+//		}
+//		else{
+//			planFile = FileSystems.getDefault().getPath(hstore_conf.global.hasher_plan);
+//		}
 
-		}
-		else{
-			planFile = FileSystems.getDefault().getPath(hstore_conf.global.hasher_plan);
-		}
+//		outputPlanFile = FileSystems.getDefault().getPath("plan_out.json");
 
-		outputPlanFile = FileSystems.getDefault().getPath("plan_out.json");
+//		try {
+//			Files.copy(planFile, outputPlanFile, StandardCopyOption.REPLACE_EXISTING);				
+//		}
+//		catch(IOException e) {
+//			System.out.println("Controller: IO Exception while copying plan file to output plan file");
+//			e.printStackTrace();
+//		}
 
-		try {
-			Files.copy(planFile, outputPlanFile, StandardCopyOption.REPLACE_EXISTING);				
-		}
-		catch(IOException e) {
-			System.out.println("Controller: IO Exception while copying plan file to output plan file");
-			e.printStackTrace();
-		}
-
-		switch (planner_selector) {
-		case 0:  algo = new GreedyPlacement(); System.out.println("GreedyPlacement is selected"); break;
-		case 1:  algo = new GreedyExtendedPlacement(); System.out.println("GreedyExtendedPlacement is selected"); break;
-		case 2:  algo = new FirstFitPlacement(); System.out.println("FirstFitPlacement is selected"); break;
-		case 3:  algo = new BinPackerPlacement(); System.out.println("BinPackerPlacement is selected"); break;
-		case 4:  algo = new OneTieredPlacement(); System.out.println("OneTieredPlacement is selected"); break;
-		case 5:  algo = new GAPlacement(); System.out.println("GAPlacement is selected"); break;
-		case 6:  algo = new GreedyExtendedOneTieredPlacement(); System.out.println("GreedyExtendedOneTieredPlacement is selected"); break;
-		}
+//		switch (planner_selector) {
+//		case 0:  algo = new GreedyPlacement(); System.out.println("GreedyPlacement is selected"); break;
+//		case 1:  algo = new GreedyExtendedPlacement(); System.out.println("GreedyExtendedPlacement is selected"); break;
+//		case 2:  algo = new FirstFitPlacement(); System.out.println("FirstFitPlacement is selected"); break;
+//		case 3:  algo = new BinPackerPlacement(); System.out.println("BinPackerPlacement is selected"); break;
+//		case 4:  algo = new OneTieredPlacement(); System.out.println("OneTieredPlacement is selected"); break;
+//		case 5:  algo = new GAPlacement(); System.out.println("GAPlacement is selected"); break;
+//		case 6:  algo = new GreedyExtendedOneTieredPlacement(); System.out.println("GreedyExtendedOneTieredPlacement is selected"); break;
+//		}
 
 	}
 
 	@Override
 	public void run () {
-		if (doMonitoring == 1){
-			try {
-				while(true){
-					Thread.sleep(POLL_FREQUENCY);
-					System.out.println("\nPolling");
-					CPUUtilPerPartitionMap = provisioning.getCPUUtilPerPartition();
-					if(!provisioning.needReconfiguration(CPUUtilPerPartitionMap)) continue;
-					System.out.println("Starting reconfiguration");
-					doReconfiguration();
-					System.out.println("Waiting until reconfiguration has completed");
-					String ip = sites.iterator().next().getHost().getIpaddr();
-					String response = ShellTools.cmd("ssh " + ip + " grep RECONFIGURATION_END /home/mserafini/h-store/hevent.log");
-					int previousReconfigurations = response.split("\n").length; 
-					while(true){
-						Thread.sleep(1000);
-						response = ShellTools.cmd("ssh " + ip + " grep RECONFIGURATION_END /home/mserafini/h-store/hevent.log");
-						if(response.split("\n").length > previousReconfigurations) break;
-					}
-					System.out.println("Reconfiguration has completed");
-					//provisioning.refreshCPUStats();
-				}
-			} catch (InterruptedException e) {
-				System.out.println("Controller was interrupted");
-				e.printStackTrace();
-				System.exit(1);
-			}
-		}
-		else{
+//		if (doMonitoring == 1){
+//			try {
+//				while(true){
+//					Thread.sleep(POLL_FREQUENCY);
+//					System.out.println("\nPolling");
+//					CPUUtilPerPartitionMap = provisioning.getCPUUtilPerPartition();
+//					if(!provisioning.needReconfiguration(CPUUtilPerPartitionMap)) continue;
+//					System.out.println("Starting reconfiguration");
+//					doReconfiguration();
+//					System.out.println("Waiting until reconfiguration has completed");
+//					String ip = sites.iterator().next().getHost().getIpaddr();
+//					String response = ShellTools.cmd("ssh " + ip + " grep RECONFIGURATION_END /home/mserafini/h-store/hevent.log");
+//					int previousReconfigurations = response.split("\n").length; 
+//					while(true){
+//						Thread.sleep(1000);
+//						response = ShellTools.cmd("ssh " + ip + " grep RECONFIGURATION_END /home/mserafini/h-store/hevent.log");
+//						if(response.split("\n").length > previousReconfigurations) break;
+//					}
+//					System.out.println("Reconfiguration has completed");
+//					//provisioning.refreshCPUStats();
+//				}
+//			} catch (InterruptedException e) {
+//				System.out.println("Controller was interrupted");
+//				e.printStackTrace();
+//				System.exit(1);
+//			}
+//		}
+//		else{
 			doReconfiguration();
-		}
+//		}
 	}
 
 	public void doReconfiguration(){
 
-		Map<Integer, Long> mSiteLoad = new HashMap<Integer, Long>();
+//		Map<Integer, Long> mSiteLoad = new HashMap<Integer, Long>();
 
-		ArrayList<Map<Long, Long>> hotTuplesList = new ArrayList<Map<Long, Long>> (no_of_partitions);
+//		ArrayList<Map<Long, Long>> hotTuplesList = new ArrayList<Map<Long, Long>> (no_of_partitions);
 
 
 
@@ -164,47 +164,47 @@ public class Controller implements Runnable {
 
 			//ttExecutor.runTestCase(); 	
 			//System.out.println("Essam Before: hotTuplesList size is " + hotTuplesList.size());
-			System.out.println("Starting tuple tracking");	
+//			System.out.println("Starting tuple tracking");	
+//
+//			ttExecutor.turnOnOff(time_window,client);	// turn on tuple tracking for time window of X seconds
+//
+//			
+//			
+//			// here we get top K
+//			ttExecutor.getTopKPerPart(no_of_partitions,hotTuplesList);
+//
+//			// here we get load per site
+//			ttExecutor.getSiteLoadPerPart(no_of_partitions,mSiteLoad);
+//
+//			System.out.println("Got list of hot tuples");	
+//
+//			// here we call the planner
+//
+//			if(doProvisioning == 1)
+//			{
+//				System.out.println("Provisioning is on");	
+//				int numberOfPartitions = provisioning.partitionsRequired(CPUUtilPerPartitionMap);
+//				System.out.println("Provisioning requires " + numberOfPartitions + " partitions");
+//				currentPlan = algo.computePlan(hotTuplesList, mSiteLoad, planFile.toString(), 
+//						numberOfPartitions, timeLimit);
+//				provisioning.setPartitions(numberOfPartitions);
+//
+//			}
+//			else
+//			{
+//				System.out.println("Provisioning is off");
+//				currentPlan = algo.computePlan(hotTuplesList, mSiteLoad, planFile.toString(), 
+//						no_of_partitions, timeLimit);
+//			}
+//
+//			System.out.println("Calculated new plan");
 
-			ttExecutor.turnOnOff(time_window,client);	// turn on tuple tracking for time window of X seconds
-
-			
-			
-			// here we get top K
-			ttExecutor.getTopKPerPart(no_of_partitions,hotTuplesList);
-
-			// here we get load per site
-			ttExecutor.getSiteLoadPerPart(no_of_partitions,mSiteLoad);
-
-			System.out.println("Got list of hot tuples");	
-
-			// here we call the planner
-
-			if(doProvisioning == 1)
-			{
-				System.out.println("Provisioning is on");	
-				int numberOfPartitions = provisioning.partitionsRequired(CPUUtilPerPartitionMap);
-				System.out.println("Provisioning requires " + numberOfPartitions + " partitions");
-				currentPlan = algo.computePlan(hotTuplesList, mSiteLoad, planFile.toString(), 
-						numberOfPartitions, timeLimit);
-				provisioning.setPartitions(numberOfPartitions);
-
-			}
-			else
-			{
-				System.out.println("Provisioning is off");
-				currentPlan = algo.computePlan(hotTuplesList, mSiteLoad, planFile.toString(), 
-						no_of_partitions, timeLimit);
-			}
-
-			System.out.println("Calculated new plan");
-
-			currentPlan.toJSON(outputPlanFile.toString());
-			String outputPlan = FileUtil.readFile(outputPlanFile.toString());
+//			currentPlan.toJSON(outputPlanFile.toString());
+			String plan = FileUtil.readFile(planFile.toString());
 
 			ClientResponse cresponse = null;
 			try {
-				cresponse = client.callProcedure("@ReconfigurationRemote", 0, outputPlan, "livepull");
+				cresponse = client.callProcedure("@ReconfigurationRemote", 0, plan, "livepull");
                                 //cresponse = client.callProcedure("@ReconfigurationRemote", 0, outputPlan, "stopcopy");
                                 System.out.println("Controller: received response: " + cresponse);
 			} catch (NoConnectionsException e) {
@@ -273,30 +273,12 @@ public class Controller implements Runnable {
 
 		if(vargs.length > 1)
 		{
-			no_of_partitions = Integer.parseInt(vargs[1]);
-			time_window = Integer.parseInt(vargs[2]);
-			planner_selector = Integer.parseInt(vargs[3]);
-			doProvisioning = Integer.parseInt(vargs[4]);
-			timeLimit = Integer.parseInt(vargs[5]);
-			doMonitoring = Integer.parseInt(vargs[6]);
-			sitesPerHost = Integer.parseInt(vargs[7]);
-			partPerSite = Integer.parseInt(vargs[8]);
-			highCPU = Double.parseDouble(vargs[9]);
-			lowCPU = Double.parseDouble(vargs[10]);
+			planFile = FileSystems.getDefault().getPath(vargs[1]);
 		}
 		else // use default
 		{
-			System.out.println("Using default parameters");
-			no_of_partitions = 4;
-			time_window = 10;
-			planner_selector = 0;
-			doProvisioning = 0;
-			timeLimit = 60000;
-			doMonitoring = 0;
-			sitesPerHost = 1;
-			partPerSite = 1;
-			highCPU = 1280;
-			lowCPU = 960;
+			System.out.println("No plan file");
+			System.exit(1);		
 		}
 
 
