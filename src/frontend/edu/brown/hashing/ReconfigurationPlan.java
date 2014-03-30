@@ -84,7 +84,7 @@ public class ReconfigurationPlan {
         String table_name;
         public ReconfigurationTable(PartitionedTable<T> old_table, PartitionedTable<T> new_table) throws Exception {
             table_name = old_table.table_name;
-            System.out.println("Considering delta for table " + table_name);
+            LOG.info("Considering delta for table " + table_name);
             setReconfigurations(new ArrayList<ReconfigurationRange<T>>());
             Iterator<PartitionRange<T>> old_ranges = old_table.partitions.iterator();
             Iterator<PartitionRange<T>> new_ranges = new_table.partitions.iterator();
@@ -92,8 +92,8 @@ public class ReconfigurationPlan {
             PartitionRange<T> new_range = new_ranges.next();
             T max_old_accounted_for = null;
             PartitionRange<T> old_range = null;
-            System.out.println("1- New range " + new_range.toString());
-            System.out.println("2- Old range " + old_range.toString());
+            LOG.info("1- New range " + new_range.toString());
+            LOG.info("2- Old range " + old_range.toString());
 
             // Iterate through the old partition ranges.
             // Only move to the next old rang
@@ -102,84 +102,84 @@ public class ReconfigurationPlan {
                 // range has been accounted for
                 if (old_range == null || old_range.max_exclusive.compareTo(max_old_accounted_for) <= 0) {
                     old_range = old_ranges.next();
-                    System.out.println("3- Old range set to " + old_range.toString());
+                    LOG.info("3- Old range set to " + old_range.toString());
                 }
 
                 if (max_old_accounted_for == null) {
                     // We have not accounted for any range yet
                     max_old_accounted_for = old_range.min_inclusive;
-                    System.out.println("4- Max old accounted for " + max_old_accounted_for);
+                    LOG.info("4- Max old accounted for " + max_old_accounted_for);
                 }
                 if (old_range.compareTo(new_range) == 0) {
-                    System.out.println("5- Same range");
+                    LOG.info("5- Same range");
                     if (old_range.partition == new_range.partition) {
-                        System.out.println("6- Same range, same partition, no change");
+                        LOG.info("6- Same range, same partition, no change");
                         // No change do nothing
                     } else {
                         // Same range new partition
-                        System.out.println("7- Moving subrange [ " + old_range.min_inclusive + "," + old_range.max_exclusive + ")" +
+                        LOG.info("7- Moving subrange [ " + old_range.min_inclusive + "," + old_range.max_exclusive + ")" +
                                 " from partition " + old_range.partition + " to partition " + new_range.partition);
                         getReconfigurations().add(new ReconfigurationRange<T>(table_name, old_range.vt, old_range.min_inclusive, old_range.max_exclusive,
                                 old_range.partition, new_range.partition));
                     }
                     max_old_accounted_for = old_range.max_exclusive;
-                    System.out.println("8- Max old accounted for " + max_old_accounted_for);
+                    LOG.info("8- Max old accounted for " + max_old_accounted_for);
                     if(new_ranges.hasNext()){
                         new_range = new_ranges.next();
-                        System.out.println("9- New range set to " + new_range.toString());
+                        LOG.info("9- New range set to " + new_range.toString());
                     }
                 } else {
-                    System.out.println("15- Different range");
+                    LOG.info("15- Different range");
                     if (old_range.max_exclusive.compareTo(new_range.max_exclusive) <= 0) {
                         // The old range is a subset of the new range -- I DON'T THINK SO
-                        System.out.println("16- Old range ends <= the end of new range - although comment says old range is included in new range");
+                        LOG.info("16- Old range ends <= the end of new range - although comment says old range is included in new range");
                         if (old_range.partition == new_range.partition) {
                             // Same partitions no reconfiguration needed here
-                            System.out.println("17- Same partition, no reconfiguration");
+                            LOG.info("17- Same partition, no reconfiguration");
                             max_old_accounted_for = old_range.max_exclusive;
-                            System.out.println("10- Max old accounted for " + max_old_accounted_for);
+                            LOG.info("10- Max old accounted for " + max_old_accounted_for);
                         } else {
                             // Need to move the old range to new range
-                            System.out.println("11- Moving subrange [ " + max_old_accounted_for + "," + old_range.max_exclusive + ")" +
+                            LOG.info("11- Moving subrange [ " + max_old_accounted_for + "," + old_range.max_exclusive + ")" +
                                     " from partition " + old_range.partition + " to partition " + new_range.partition);
                             getReconfigurations().add(new ReconfigurationRange<T>(table_name, old_range.vt, max_old_accounted_for, old_range.max_exclusive,
                                     old_range.partition, new_range.partition));
                             max_old_accounted_for = old_range.max_exclusive;                  
-                            System.out.println("12- Max old accounted for " + max_old_accounted_for);
+                            LOG.info("12- Max old accounted for " + max_old_accounted_for);
                         }
                         //Have we satisfied all of the new range and is there another new range to process
                         if (max_old_accounted_for.compareTo(new_range.max_exclusive)==0 && new_ranges.hasNext()){
-                            System.out.println("13- Max old accounted for equal to end of new range: " + max_old_accounted_for);
+                            LOG.info("13- Max old accounted for equal to end of new range: " + max_old_accounted_for);
 
                             new_range = new_ranges.next();
-                            System.out.println("14- New range set to " + new_range.toString());
+                            LOG.info("14- New range set to " + new_range.toString());
                         }
 
                     } else {
-                        System.out.println("17- Old range after the end of new range - although comment says old range is larger than in new range");
+                        LOG.info("17- Old range after the end of new range - although comment says old range is larger than in new range");
                         // The old range is larger than this new range
                         // keep getting new ranges until old range has been satisfied
                         while (old_range.max_exclusive.compareTo(new_range.max_exclusive) > 0) {
                             if (old_range.partition == new_range.partition) {
-                                System.out.println("22- Same partition, no movement");
+                                LOG.info("22- Same partition, no movement");
                                 // No need to move this range
                                 max_old_accounted_for = new_range.max_exclusive;
-                                System.out.println("18- Max old accounted for " + max_old_accounted_for);
+                                LOG.info("18- Max old accounted for " + max_old_accounted_for);
                             } else {
                                 // move
                                 // PROBLEM IS HERE!
-                                System.out.println("19- Moving subrange [ " + max_old_accounted_for + "," + new_range.max_exclusive + ")" +
+                                LOG.info("19- Moving subrange [ " + max_old_accounted_for + "," + new_range.max_exclusive + ")" +
                                         " from partition " + old_range.partition + " to partition " + new_range.partition);
                                 getReconfigurations().add(new ReconfigurationRange<T>(table_name, old_range.vt, max_old_accounted_for, new_range.max_exclusive,
                                         old_range.partition, new_range.partition));
                                 max_old_accounted_for = new_range.max_exclusive;
-                                System.out.println("21- Max old accounted for " + max_old_accounted_for);
+                                LOG.info("21- Max old accounted for " + max_old_accounted_for);
                             }
                             if (new_ranges.hasNext() == false) {
                                 throw new RuntimeException("Not all ranges accounted for");
                             }
                             new_range = new_ranges.next();
-                            System.out.println("20- New range set to " + new_range.toString());
+                            LOG.info("20- New range set to " + new_range.toString());
                       }
                     }
 
