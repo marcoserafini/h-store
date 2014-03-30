@@ -163,6 +163,7 @@ public class Plan {
 	public void addRange(Integer partition, Long from, Long to){
 
 		// temporarily expand bounds s.t. it merges with adjacent ranges
+	    assert from <= to : "Invalid range entered, from " + from + " to " + to; 
 		Long fromTest = from - 1;
 		Long toTest = to + 1;
 
