@@ -93,7 +93,6 @@ public class ReconfigurationPlan {
             T max_old_accounted_for = null;
             PartitionRange<T> old_range = null;
             LOG.info("1- New range " + new_range.toString());
-            LOG.info("2- Old range " + old_range.toString());
 
             // Iterate through the old partition ranges.
             // Only move to the next old rang
