@@ -199,8 +199,8 @@ public class Controller implements Runnable {
 //
 //			System.out.println("Calculated new plan");
 
-		    currentPlan = new Plan(planFile.toString());
-			currentPlan.toJSON(planFile.toString());
+		    currentPlan = new Plan("/home/mserafini/h-store/plan_ours.json");
+			currentPlan.toJSON("/home/mserafini/h-store/plan_ours.json-read");
 			String plan = FileUtil.readFile(planFile.toString());
 
 			ClientResponse cresponse = null;
