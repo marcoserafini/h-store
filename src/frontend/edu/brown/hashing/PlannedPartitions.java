@@ -519,7 +519,7 @@ public class PlannedPartitions implements JSONSerializable {
         public PartitionRange(VoltType vt, T min_inclusive, T max_exclusive) {
             this.vt = vt;
             if (min_inclusive.compareTo(max_exclusive) > 0) {
-                throw new RuntimeException("Min cannot be greater than max. Must be <= ");
+                throw new RuntimeException("Min (" + min_inclusive + ") cannot be greater than max (" + max_exclusive + "). Must be <= ");
             }
             this.min_inclusive = min_inclusive;
             this.max_exclusive = max_exclusive;
