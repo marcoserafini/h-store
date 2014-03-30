@@ -309,6 +309,7 @@ public class TwoTieredRangePartitions implements JSONSerializable {
         	PartitionPhase new_plan = null;
             PartitionPhase old_plan = null;
         	// update the partition plan
+            System.out.println("Got here");
             if (partition_json.has(PARTITION_PLAN)) {
                 JSONObject plan = partition_json.getJSONObject(PARTITION_PLAN);
                 System.out.println("Plan is: " + plan.toString());
@@ -322,9 +323,9 @@ public class TwoTieredRangePartitions implements JSONSerializable {
             		this.partition_plan = new_plan;
             		old_plan = this.old_partition_plan;
             		System.out.println("Got old plan " + old_plan.toString());
-                    for (PartitionRange range: old_plan.getPartitions(DEFAULT_TABLE)){
-                        System.out.println(range.toString());
-                    }
+//                    for (PartitionRange range: old_plan.getPartitions(DEFAULT_TABLE)){
+//                        System.out.println(range.toString());
+//                    }
             	}
             } else {
                 throw new JSONException(String.format("JSON file is missing key \"%s\". ", PARTITION_PLAN));
