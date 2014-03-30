@@ -48,7 +48,7 @@ public class Controller implements Runnable {
 	private Collection<Site> sites;
 
 //	private Placement algo;
-//	private Plan currentPlan;
+	private Plan currentPlan;
 	private static Path planFile;
 //	private Path outputPlanFile;
 
@@ -199,7 +199,8 @@ public class Controller implements Runnable {
 //
 //			System.out.println("Calculated new plan");
 
-//			currentPlan.toJSON(outputPlanFile.toString());
+		    currentPlan = new Plan(planFile.toString());
+			currentPlan.toJSON(planFile.toString());
 			String plan = FileUtil.readFile(planFile.toString());
 
 			ClientResponse cresponse = null;
