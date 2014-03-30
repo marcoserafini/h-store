@@ -623,8 +623,8 @@ public class PlannedPartitions implements JSONSerializable {
             }
             return new ReconfigurationPlan(this.partition_phase_map.get(old_phase), this.partition_phase_map.get(new_phase));
         } catch (Exception ex) {
-            LOG.error("Exception on setting partition phase", ex);
-            LOG.error(String.format("Old phase: %s  New Phase: %s" , old_phase,new_phase));
+            LOG.error("Exception on setting partition phase in PlannedPartitions", ex);
+            LOG.error(String.format("Old phase: %s  New Phase: %s" , old_phase, new_phase));
             throw new RuntimeException("Exception building Reconfiguration plan", ex);
         }
 

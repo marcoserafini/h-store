@@ -306,34 +306,30 @@ public class TwoTieredRangePartitions implements JSONSerializable {
         	// check that the new tables match the old tables
         	getExplicitPartitionedTables(partition_json);
         	
-        	System.out.println("Got here");
-        	
         	PartitionPhase new_plan = null;
             PartitionPhase old_plan = null;
         	// update the partition plan
             if (partition_json.has(PARTITION_PLAN)) {
                 JSONObject plan = partition_json.getJSONObject(PARTITION_PLAN);
                 new_plan = new PartitionPhase(catalog_context, this.table_vt_map, plan, partitionedTablesByFK);
-                System.out.println("Got here+");
+                LOG.debug("Built new plan " + new_plan.toString());
                 synchronized (this) {
             		this.old_partition_plan = this.partition_plan;
             		this.partition_plan = new_plan;
             		old_plan = this.old_partition_plan;
+                    LOG.debug("Got old plan " + old_plan.toString());
             	}
             } else {
                 throw new JSONException(String.format("JSON file is missing key \"%s\". ", PARTITION_PLAN));
             }
-            System.out.println("Got here++");
 
             if (old_plan == null) {
                 return null;
             }
             return new ReconfigurationPlan(old_plan, new_plan);
         } catch (Exception ex) {
-            LOG.error("Exception on setting partition plan", ex);
-            System.out.println("Exception on setting partition plan" + ex.toString());
-            LOG.error(String.format("Old plan: %s  New plan: %s" , getPreviousPlan() ,getCurrentPlan()));
-            System.out.println(String.format("Old plan: %s  New plan: %s" , getPreviousPlan() ,getCurrentPlan()));
+            LOG.error("Exception on setting partition plan in TwoTieredRangePartitions ", ex);
+            LOG.error(String.format("Old plan: %s  New plan: %s" , getPreviousPlan().toString() ,getCurrentPlan().toString()));
             throw new RuntimeException("Exception building Reconfiguration plan", ex);
         }
 
