@@ -311,6 +311,7 @@ public class TwoTieredRangePartitions implements JSONSerializable {
         	// update the partition plan
             if (partition_json.has(PARTITION_PLAN)) {
                 JSONObject plan = partition_json.getJSONObject(PARTITION_PLAN);
+                System.out.println("Plan is: " + plan.toString());
                 new_plan = new PartitionPhase(catalog_context, this.table_vt_map, plan, partitionedTablesByFK);
                 System.out.println("Built new plan " + new_plan.toString());
                 for (PartitionRange range: new_plan.getPartitions(DEFAULT_TABLE)){
