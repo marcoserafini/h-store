@@ -32,17 +32,17 @@ public class ReconfigurationPlan {
 
     private static final Logger LOG = Logger.getLogger(ReconfigurationPlan.class);
     protected Map<String,ReconfigurationTable<? extends Comparable<?>>> tables_map;
-    
+
     //Helper map of partition ID and outgoing/incoming ranges for this reconfiguration
     protected Map<Integer, List<ReconfigurationRange<? extends Comparable<?>>>> outgoing_ranges;
     protected Map<Integer, List<ReconfigurationRange<? extends Comparable<?>>>> incoming_ranges;
     public String planDebug = "";
-    
+
     public ReconfigurationPlan(){
         outgoing_ranges = new HashMap<>();
         incoming_ranges = new HashMap<>();
     }
-    
+
     public void addRange(ReconfigurationRange<?> range){
         if(outgoing_ranges.containsKey(range.old_partition)==false){
             outgoing_ranges.put(range.old_partition, new ArrayList<ReconfigurationRange<? extends Comparable<?>>>());
@@ -53,7 +53,7 @@ public class ReconfigurationPlan {
         outgoing_ranges.get(range.old_partition).add(range);
         incoming_ranges.get(range.new_partition).add(range);
     }    
-    
+
     /**
      * @throws Exception 
      * 
@@ -70,7 +70,7 @@ public class ReconfigurationPlan {
         planDebug = String.format("Reconfiguration plan generated \n Out: %s \n In: %s",outgoing_ranges.toString(),incoming_ranges.toString());
         LOG.info(planDebug);
     }
-    
+
     protected void registerReconfigurationRanges(){
         for(String table_name : tables_map.keySet()){
             for(ReconfigurationRange<?> range : tables_map.get(table_name).getReconfigurations()){
@@ -83,82 +83,113 @@ public class ReconfigurationPlan {
         private List<ReconfigurationRange<T>> reconfigurations;
         String table_name;
         public ReconfigurationTable(PartitionedTable<T> old_table, PartitionedTable<T> new_table) throws Exception {
-          table_name = old_table.table_name;
-          setReconfigurations(new ArrayList<ReconfigurationRange<T>>());
-          Iterator<PartitionRange<T>> old_ranges = old_table.partitions.iterator();
-          Iterator<PartitionRange<T>> new_ranges = new_table.partitions.iterator();
+            table_name = old_table.table_name;
+            System.out.println("Considering delta for table " + table_name);
+            setReconfigurations(new ArrayList<ReconfigurationRange<T>>());
+            Iterator<PartitionRange<T>> old_ranges = old_table.partitions.iterator();
+            Iterator<PartitionRange<T>> new_ranges = new_table.partitions.iterator();
 
-          PartitionRange<T> new_range = new_ranges.next();
-          T max_old_accounted_for = null;
-          PartitionRange<T> old_range = null;
-          // Iterate through the old partition ranges.
-          // Only move to the next old rang
-          while (old_ranges.hasNext() || (max_old_accounted_for != null && max_old_accounted_for.compareTo(old_range.max_exclusive)!=0) ) {
-            // only move to the next element if first time, or all of the previous
-            // range has been accounted for
-            if (old_range == null || old_range.max_exclusive.compareTo(max_old_accounted_for) <= 0) {
-              old_range = old_ranges.next();
-            }
+            PartitionRange<T> new_range = new_ranges.next();
+            T max_old_accounted_for = null;
+            PartitionRange<T> old_range = null;
+            System.out.println("1- New range " + new_range.toString());
+            System.out.println("2- Old range " + old_range.toString());
 
-            if (max_old_accounted_for == null) {
-              // We have not accounted for any range yet
-              max_old_accounted_for = old_range.min_inclusive;
-            }
-            if (old_range.compareTo(new_range) == 0) {
-              if (old_range.partition == new_range.partition) {
-                // No change do nothing
-              } else {
-                // Same range new partition
-                getReconfigurations().add(new ReconfigurationRange<T>(table_name, old_range.vt, old_range.min_inclusive, old_range.max_exclusive,
-                    old_range.partition, new_range.partition));
-              }
-              max_old_accounted_for = old_range.max_exclusive;
-              if(new_ranges.hasNext())
-                  new_range = new_ranges.next();
-            } else {
-              if (old_range.max_exclusive.compareTo(new_range.max_exclusive) <= 0) {
-                // The old range is a subset of the new range
-                if (old_range.partition == new_range.partition) {
-                  // Same partitions no reconfiguration needed here
-                  max_old_accounted_for = old_range.max_exclusive;
+            // Iterate through the old partition ranges.
+            // Only move to the next old rang
+            while (old_ranges.hasNext() || (max_old_accounted_for != null && max_old_accounted_for.compareTo(old_range.max_exclusive)!=0) ) {
+                // only move to the next element if first time, or all of the previous
+                // range has been accounted for
+                if (old_range == null || old_range.max_exclusive.compareTo(max_old_accounted_for) <= 0) {
+                    old_range = old_ranges.next();
+                    System.out.println("3- Old range set to " + old_range.toString());
+                }
+
+                if (max_old_accounted_for == null) {
+                    // We have not accounted for any range yet
+                    max_old_accounted_for = old_range.min_inclusive;
+                    System.out.println("4- Max old accounted for " + max_old_accounted_for);
+                }
+                if (old_range.compareTo(new_range) == 0) {
+                    System.out.println("5- Same range");
+                    if (old_range.partition == new_range.partition) {
+                        System.out.println("6- Same range, same partition, no change");
+                        // No change do nothing
+                    } else {
+                        // Same range new partition
+                        System.out.println("7- Moving subrange [ " + old_range.min_inclusive + "," + old_range.max_exclusive + ")" +
+                                " from partition " + old_range.partition + " to partition " + new_range.partition);
+                        getReconfigurations().add(new ReconfigurationRange<T>(table_name, old_range.vt, old_range.min_inclusive, old_range.max_exclusive,
+                                old_range.partition, new_range.partition));
+                    }
+                    max_old_accounted_for = old_range.max_exclusive;
+                    System.out.println("8- Max old accounted for " + max_old_accounted_for);
+                    if(new_ranges.hasNext()){
+                        new_range = new_ranges.next();
+                        System.out.println("9- New range set to " + new_range.toString());
+                    }
                 } else {
-                  // Need to move the old range to new range
-                  getReconfigurations().add(new ReconfigurationRange<T>(table_name, old_range.vt, max_old_accounted_for, old_range.max_exclusive,
-                      old_range.partition, new_range.partition));
-                  max_old_accounted_for = old_range.max_exclusive;                  
-                }
-		//Have we satisfied all of the new range and is there another new range to process
-		if (max_old_accounted_for.compareTo(new_range.max_exclusive)==0 && new_ranges.hasNext()){
-                    new_range = new_ranges.next();
-		}
+                    System.out.println("15- Different range");
+                    if (old_range.max_exclusive.compareTo(new_range.max_exclusive) <= 0) {
+                        // The old range is a subset of the new range -- I DON'T THINK SO
+                        System.out.println("16- Old range ends <= the end of new range - although comment says old range is included in new range");
+                        if (old_range.partition == new_range.partition) {
+                            // Same partitions no reconfiguration needed here
+                            System.out.println("17- Same partition, no reconfiguration");
+                            max_old_accounted_for = old_range.max_exclusive;
+                            System.out.println("10- Max old accounted for " + max_old_accounted_for);
+                        } else {
+                            // Need to move the old range to new range
+                            System.out.println("11- Moving subrange [ " + max_old_accounted_for + "," + old_range.max_exclusive + ")" +
+                                    " from partition " + old_range.partition + " to partition " + new_range.partition);
+                            getReconfigurations().add(new ReconfigurationRange<T>(table_name, old_range.vt, max_old_accounted_for, old_range.max_exclusive,
+                                    old_range.partition, new_range.partition));
+                            max_old_accounted_for = old_range.max_exclusive;                  
+                            System.out.println("12- Max old accounted for " + max_old_accounted_for);
+                        }
+                        //Have we satisfied all of the new range and is there another new range to process
+                        if (max_old_accounted_for.compareTo(new_range.max_exclusive)==0 && new_ranges.hasNext()){
+                            System.out.println("13- Max old accounted for equal to end of new range: " + max_old_accounted_for);
 
-              } else {
-                // The old range is larger than this new range
-                // keep getting new ranges until old range has been satisfied
-                while (old_range.max_exclusive.compareTo(new_range.max_exclusive) > 0) {
-                  if (old_range.partition == new_range.partition) {
-                    // No need to move this range
-                    max_old_accounted_for = new_range.max_exclusive;
-                  } else {
-                    // move
-                    getReconfigurations().add(new ReconfigurationRange<T>(table_name, old_range.vt, max_old_accounted_for, new_range.max_exclusive,
-                        old_range.partition, new_range.partition));
-                    max_old_accounted_for = new_range.max_exclusive;
-                  }
-                  if (new_ranges.hasNext() == false) {
-                    throw new RuntimeException("Not all ranges accounted for");
-                  }
-                  new_range = new_ranges.next();
-                }
-              }
+                            new_range = new_ranges.next();
+                            System.out.println("14- New range set to " + new_range.toString());
+                        }
 
+                    } else {
+                        System.out.println("17- Old range after the end of new range - although comment says old range is larger than in new range");
+                        // The old range is larger than this new range
+                        // keep getting new ranges until old range has been satisfied
+                        while (old_range.max_exclusive.compareTo(new_range.max_exclusive) > 0) {
+                            if (old_range.partition == new_range.partition) {
+                                System.out.println("22- Same partition, no movement");
+                                // No need to move this range
+                                max_old_accounted_for = new_range.max_exclusive;
+                                System.out.println("18- Max old accounted for " + max_old_accounted_for);
+                            } else {
+                                // move
+                                // PROBLEM IS HERE!
+                                System.out.println("19- Moving subrange [ " + max_old_accounted_for + "," + new_range.max_exclusive + ")" +
+                                        " from partition " + old_range.partition + " to partition " + new_range.partition);
+                                getReconfigurations().add(new ReconfigurationRange<T>(table_name, old_range.vt, max_old_accounted_for, new_range.max_exclusive,
+                                        old_range.partition, new_range.partition));
+                                max_old_accounted_for = new_range.max_exclusive;
+                                System.out.println("21- Max old accounted for " + max_old_accounted_for);
+                            }
+                            if (new_ranges.hasNext() == false) {
+                                throw new RuntimeException("Not all ranges accounted for");
+                            }
+                            new_range = new_ranges.next();
+                            System.out.println("20- New range set to " + new_range.toString());
+                      }
+                    }
+
+                }
             }
-          }
-          setReconfigurations(
-                  mergeReconfigurations(splitReconfigurations(getReconfigurations(),new_table.getCatalog_table()), new_table.getCatalog_table()));
+            setReconfigurations(
+                    mergeReconfigurations(splitReconfigurations(getReconfigurations(),new_table.getCatalog_table()), new_table.getCatalog_table()));
         }
-        
-        
+
+
         private List<ReconfigurationRange<T>> mergeReconfigurations(List<ReconfigurationRange<T>> reconfiguration_range, Table catalog_table) {
             if(catalog_table==null){
                 LOG.info("Catalog table is null. Not merging reconfigurations");
@@ -166,70 +197,70 @@ public class ReconfigurationPlan {
             }
             List<ReconfigurationRange<T>> res = new ArrayList<>();
             try{
-                
+
                 long tupleBytes = MemoryEstimator.estimateTupleSize(catalog_table);
                 long currentMin = ReconfigurationConstants.MIN_TRANSFER_BYTES;
                 long minRows = currentMin/tupleBytes;
                 LOG.info(String.format("Trying to merge on table:%s  TupleBytes:%s  CurrentMin:%s  MinRows:%s MinTransferBytes:%s", catalog_table.fullName(),tupleBytes,currentMin,minRows, currentMin));
-                
+
                 Comparable<?> sampleKey = reconfiguration_range.get(0).getMin_inclusive() ;
                 if (sampleKey instanceof Short || sampleKey instanceof Integer || sampleKey instanceof Long  ){
-                	HashMap<String, ReconfigurationRange<T>> rangeMap = new HashMap<>();
-                	for(ReconfigurationRange<T> range : reconfiguration_range){
-                        
-                		// only merge ranges that have the same old partition and same new partition
-                    	int old_partition = range.old_partition;
-                    	int new_partition = range.new_partition;
-                    	String key = new String(old_partition + "->" + new_partition);
-                    	ReconfigurationRange<T> partialRange = rangeMap.get(key);
-                    	if(partialRange == null) {
-                    		partialRange = new ReconfigurationRange<T>(
+                    HashMap<String, ReconfigurationRange<T>> rangeMap = new HashMap<>();
+                    for(ReconfigurationRange<T> range : reconfiguration_range){
+
+                        // only merge ranges that have the same old partition and same new partition
+                        int old_partition = range.old_partition;
+                        int new_partition = range.new_partition;
+                        String key = new String(old_partition + "->" + new_partition);
+                        ReconfigurationRange<T> partialRange = rangeMap.get(key);
+                        if(partialRange == null) {
+                            partialRange = new ReconfigurationRange<T>(
                                     range.table_name, range.vt, new ArrayList<Long>(), new ArrayList<Long>(), old_partition, new_partition);
-                    		rangeMap.put(key, partialRange);
-                    	}
-                    	
-                    	long max = ((Number)range.max_exclusive).longValue();
+                            rangeMap.put(key, partialRange);
+                        }
+
+                        long max = ((Number)range.max_exclusive).longValue();
                         long min = ((Number)range.min_inclusive).longValue();
                         partialRange.getMaxList().add(max);
                         partialRange.getMinList().add(min);
                         long max_potential_keys = partialRange.getMaxPotentialKeys();
-                        
+
                         // once we have reached the minimum number of rows, we can add this set of ranges to the output
                         if(max_potential_keys >= minRows) {
-                        	int num_ranges = partialRange.getMaxList().size();
-                        	if(num_ranges > 1) {
-                        		LOG.info(String.format("Merging %s ranges. Table:%s",num_ranges,table_name));
-                        	}
-                        	
+                            int num_ranges = partialRange.getMaxList().size();
+                            if(num_ranges > 1) {
+                                LOG.info(String.format("Merging %s ranges. Table:%s",num_ranges,table_name));
+                            }
+
                             res.add(partialRange);
                             partialRange = null;
                             rangeMap.remove(key);
                         }
-                        
+
                     }
-                    
-                	// and don't forget to add the remaining sets of ranges that didn't reach the minimum number of rows
-                	for(Map.Entry<String, ReconfigurationRange<T>> rangeEntry : rangeMap.entrySet()) {
-                		int num_ranges = rangeEntry.getValue().getMaxList().size();
-                    	if(num_ranges > 1) {
-                    		LOG.info(String.format("Merging %s ranges. Table:%s",num_ranges,table_name));
-                    	}
-                    	
+
+                    // and don't forget to add the remaining sets of ranges that didn't reach the minimum number of rows
+                    for(Map.Entry<String, ReconfigurationRange<T>> rangeEntry : rangeMap.entrySet()) {
+                        int num_ranges = rangeEntry.getValue().getMaxList().size();
+                        if(num_ranges > 1) {
+                            LOG.info(String.format("Merging %s ranges. Table:%s",num_ranges,table_name));
+                        }
+
                         res.add(rangeEntry.getValue());
                     }
-                    
+
                 } else{
-                
+
                     throw new NotImplementedException("Can only handle types of small, long, int. Class: " +sampleKey.getClass().getName());
                 }
             } catch(Exception ex){
-              LOG.error("Exception splitting reconfiguration ranges, returning original list",ex);  
-              return reconfiguration_range;
+                LOG.error("Exception splitting reconfiguration ranges, returning original list",ex);  
+                return reconfiguration_range;
             }
 
             return res;
         }
-        
+
         private List<ReconfigurationRange<T>> splitReconfigurations(List<ReconfigurationRange<T>> reconfiguration_range, Table catalog_table) {
             if(catalog_table==null){
                 LOG.info("Catalog table is null. Not splitting reconfigurations");
@@ -237,12 +268,12 @@ public class ReconfigurationPlan {
             }
             boolean modified = false;
             try{
-                
+
                 long tupleBytes = MemoryEstimator.estimateTupleSize(catalog_table);
                 long currentMax = ReconfigurationConstants.MAX_TRANSFER_BYTES;
                 long maxRows = currentMax/tupleBytes;
                 LOG.info(String.format("Trying to split on table:%s  TupleBytes:%s  CurrentMax:%s  MaxRows:%s MaxTransferBytes:%s", catalog_table.fullName(),tupleBytes,currentMax,maxRows, currentMax));
-                
+
                 List<ReconfigurationRange<T>> res = new ArrayList<>();
                 Comparable<?> sampleKey = reconfiguration_range.get(0).getMin_inclusive() ;
                 if (sampleKey instanceof Short || sampleKey instanceof Integer || sampleKey instanceof Long  ){
@@ -267,22 +298,22 @@ public class ReconfigurationPlan {
                                 modified = true;
                                 res.add(newRange);
                             }
-                            
+
                         } else {
                             //This range is ok to keep
                             res.add(range);
                         }
-                        
+
                     }
                 } else{
-                
+
                     throw new NotImplementedException("Can only handle types of small, long, int. Class: " +sampleKey.getClass().getName());
                 }
                 if(modified){
                     return res;
                 }
             } catch(Exception ex){
-              LOG.error("Exception splitting reconfiguration ranges, returning original list",ex);  
+                LOG.error("Exception splitting reconfiguration ranges, returning original list",ex);  
             }
 
             return reconfiguration_range;
@@ -301,73 +332,73 @@ public class ReconfigurationPlan {
         public void setReconfigurations(List<ReconfigurationRange<T>> reconfigurations) {
             this.reconfigurations = reconfigurations;
         }
-      }
-      
-      /**
-       * A partition range that holds old and new partition IDs.
-       * As of 2.4.14 a range may not be non-contiguous, so a range
-       * may actually hold a set of ranges. A range is the granual of 
-       * migration / reconfiguration.
-       * 
-       * @author aelmore
-       * 
-       * @param <T>
-       */
-      public static class ReconfigurationRange<T extends Comparable<T>> extends PartitionRange<T> {
+    }
+
+    /**
+     * A partition range that holds old and new partition IDs.
+     * As of 2.4.14 a range may not be non-contiguous, so a range
+     * may actually hold a set of ranges. A range is the granual of 
+     * migration / reconfiguration.
+     * 
+     * @author aelmore
+     * 
+     * @param <T>
+     */
+    public static class ReconfigurationRange<T extends Comparable<T>> extends PartitionRange<T> {
         public int old_partition;
         public int new_partition;
         private List<Pair<Long,Long>> ranges;
         private List<Long> min_list;
         private List<Long> max_list;
-        
+
         //To reduce visibility from PartitionRange as this can have multiple ranges
         private T min_inclusive;
         private Long min_inclusive_long;
         private T max_exclusive;
         private Long max_exclusive_long;
-        
+
         public String table_name;
         private boolean single_range = false; //single range or multi
-         
-        
-        public ReconfigurationRange(String table_name, VoltType vt, T min_inclusive, T max_exclusive, int old_partition, int new_partition)  {
-          super(vt, min_inclusive, max_exclusive);
-          //FIXME change to be type generic
 
-          this.min_inclusive = min_inclusive;
-          this.max_exclusive = max_exclusive;
-          min_inclusive_long = ((Number)min_inclusive).longValue();
-          max_exclusive_long = ((Number)max_exclusive).longValue();
-          Pair<Long,Long> minMax = new Pair<Long, Long>(min_inclusive_long, max_exclusive_long);
-          ranges = new ArrayList<>();
-          ranges.add(minMax);
-          
-          min_list = new ArrayList<>();
-          min_list.add(min_inclusive_long);
-          max_list = new ArrayList<>();
-          max_list.add(max_exclusive_long);
-          
-          this.old_partition = old_partition;
-          this.new_partition = new_partition;
-          this.table_name = table_name;
-          this.single_range = true;
+
+        public ReconfigurationRange(String table_name, VoltType vt, T min_inclusive, T max_exclusive, int old_partition, int new_partition)  {
+            super(vt, min_inclusive, max_exclusive);
+            //FIXME change to be type generic
+
+            this.min_inclusive = min_inclusive;
+            this.max_exclusive = max_exclusive;
+            min_inclusive_long = ((Number)min_inclusive).longValue();
+            max_exclusive_long = ((Number)max_exclusive).longValue();
+            Pair<Long,Long> minMax = new Pair<Long, Long>(min_inclusive_long, max_exclusive_long);
+            ranges = new ArrayList<>();
+            ranges.add(minMax);
+
+            min_list = new ArrayList<>();
+            min_list.add(min_inclusive_long);
+            max_list = new ArrayList<>();
+            max_list.add(max_exclusive_long);
+
+            this.old_partition = old_partition;
+            this.new_partition = new_partition;
+            this.table_name = table_name;
+            this.single_range = true;
         }
-        
+
         public ReconfigurationRange(String table_name, VoltType vt, List<Long> min_inclusive, List<Long> max_exclusive, int old_partition, int new_partition) {
             super(vt);
             //FIXME change to be type generic
 
             ranges = new ArrayList<>();
             for(int i = 0; i < min_inclusive.size() && i < max_exclusive.size(); ++i) {
-            	Pair<Long,Long> minMax = new Pair<Long, Long>(min_inclusive.get(i), max_exclusive.get(i));
+                Pair<Long,Long> minMax = new Pair<Long, Long>(min_inclusive.get(i), max_exclusive.get(i));
                 ranges.add(minMax);
             }
-            
+
             min_list = new ArrayList<>();
             min_list.addAll(min_inclusive);
             max_list = new ArrayList<>();
             max_list.addAll(max_exclusive);
-            
+
             this.old_partition = old_partition;
             this.new_partition = new_partition;
             this.table_name = table_name;
@@ -376,21 +407,21 @@ public class ReconfigurationPlan {
 
         @Override
         public String toString(){
-        	if(min_inclusive != null && max_exclusive != null) {
-        		return String.format("ReconfigRange (%s) keys:[%s,%s) p_id:%s->%s ",table_name,min_inclusive,max_exclusive,old_partition,new_partition);
-        	}
-        	else {
-        		String keys = "";
-        		for(int i = 0; i < min_list.size() && i < max_list.size(); ++i) {
-        			if(i != 0) {
-        				keys += ", ";
-        			}
-        			keys += "[" + min_list.get(i) + "," + max_list.get(i) + ")";
-        		}
-        		return String.format("ReconfigRange (%s) keys:%s p_id:%s->%s ",table_name,keys,old_partition,new_partition);
-        	}
+            if(min_inclusive != null && max_exclusive != null) {
+                return String.format("ReconfigRange (%s) keys:[%s,%s) p_id:%s->%s ",table_name,min_inclusive,max_exclusive,old_partition,new_partition);
+            }
+            else {
+                String keys = "";
+                for(int i = 0; i < min_list.size() && i < max_list.size(); ++i) {
+                    if(i != 0) {
+                        keys += ", ";
+                    }
+                    keys += "[" + min_list.get(i) + "," + max_list.get(i) + ")";
+                }
+                return String.format("ReconfigRange (%s) keys:%s p_id:%s->%s ",table_name,keys,old_partition,new_partition);
+            }
         }
-        
+
         public boolean inRange(Comparable<?> key){
             try{
                 long keyL = ((Number)key).longValue();
@@ -408,13 +439,13 @@ public class ReconfigurationPlan {
             }
             return false;
         }
-        
+
         @SuppressWarnings("unchecked")
         public <T> T castKey(Comparable<?> key){
             return (T)key;
         }
-        
-       
+
+
 
         @Override
         public int hashCode() {
@@ -426,7 +457,7 @@ public class ReconfigurationPlan {
             result = prime * result + ((table_name == null) ? 0 : table_name.hashCode());
             return result;
         }
-        
+
 
         @Override
         public boolean equals(Object obj) {
@@ -461,13 +492,13 @@ public class ReconfigurationPlan {
         public List<Long> getMaxList() {
             return max_list;
         }
-        
+
         public Long getMaxPotentialKeys() {
-        	Long max_potential_keys = 0L;
-        	for(int i = 0; i < min_list.size() && i < max_list.size(); ++i) {
-        		max_potential_keys += max_list.get(i) - min_list.get(i);
-        	}
-        	return max_potential_keys;
+            Long max_potential_keys = 0L;
+            for(int i = 0; i < min_list.size() && i < max_list.size(); ++i) {
+                max_potential_keys += max_list.get(i) - min_list.get(i);
+            }
+            return max_potential_keys;
         }
 
         public T getMin_inclusive() {
@@ -481,15 +512,15 @@ public class ReconfigurationPlan {
                 throw new RuntimeException("Trying to get max_exclusive when multiple ranges exists");
             return max_exclusive;
         } 
-        
+
         public boolean isSingleRange() {
-        	return single_range;
+            return single_range;
         }
     }
-      
 
-      
-      
+
+
+
     public Map<Integer, List<ReconfigurationRange<? extends Comparable<?>>>> getOutgoing_ranges() {
         return outgoing_ranges;
     }
