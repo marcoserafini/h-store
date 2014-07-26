@@ -139,9 +139,9 @@ public class GreedyExtendedPlacement extends Placement {
 			} 
 		} // end for each partition
 
-		//if(!catalogContext.jarPath.getName().contains("tpcc")) {
+		if(!catalogContext.jarPath.getName().contains("tpcc")) {
 			aPlan = demoteTuples(hotTuplesListCopy, aPlan);
-		//}
+		}
 		removeEmptyPartitions(aPlan);
 		return aPlan;
 		

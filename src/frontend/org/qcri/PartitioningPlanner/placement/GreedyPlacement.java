@@ -110,9 +110,9 @@ public class GreedyPlacement extends Placement {
 			} // end in case of shrinking number of partitions
 		} // end for each partition
 
-//		if(!catalogContext.jarPath.getName().contains("tpcc")) {
+		if(!catalogContext.jarPath.getName().contains("tpcc")) {
 	      		aPlan = demoteTuples(hotTuplesListCopy, aPlan);
-//		}
+		}
 		removeEmptyPartitions(aPlan);
 		return aPlan;
 		

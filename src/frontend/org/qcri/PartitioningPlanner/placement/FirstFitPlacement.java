@@ -130,9 +130,9 @@ public class FirstFitPlacement extends Placement {
 			
 		} // end for each partition
 
-		//if(!catalogContext.jarPath.getName().contains("tpcc")) {
+		if(!catalogContext.jarPath.getName().contains("tpcc")) {
 			newPlan = demoteTuples(hotTuplesListCopy, newPlan);	
-		//}
+		}
 		removeEmptyPartitions(newPlan);
 		return newPlan;
 

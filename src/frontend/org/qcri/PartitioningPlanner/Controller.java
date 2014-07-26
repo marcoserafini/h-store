@@ -84,7 +84,7 @@ public class Controller implements Runnable {
 //		client = ClientFactory.createClient();
 //		client.configureBlocking(false);
 //		sites = CatalogUtil.getAllSites(catalog);
-//		this.catalog_context = catalog_context;
+		this.catalog_context = catalog_context;
 //		connectToHost();
 //		provisioning = new Provisioning(sites, no_of_partitions, sitesPerHost, partPerSite, highCPU, lowCPU);
 

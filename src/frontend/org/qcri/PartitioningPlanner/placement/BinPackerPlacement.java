@@ -264,9 +264,9 @@ public class BinPackerPlacement extends Placement {
 
 		GLPK.glp_delete_prob(lp);
 		
-		//if(!catalogContext.jarPath.getName().contains("tpcc")) {
+		if(!catalogContext.jarPath.getName().contains("tpcc")) {
 			aPlan = demoteTuples(hotTuplesList, aPlan);
-		//}
+		}
 		removeEmptyPartitions(aPlan);
 		return aPlan;
 
