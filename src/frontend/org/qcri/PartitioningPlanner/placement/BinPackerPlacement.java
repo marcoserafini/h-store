@@ -94,8 +94,7 @@ public class BinPackerPlacement extends Placement {
 			List<List<Plan.Range>> partitionSlices = oldPlan.getRangeSlices(i,  coldPartitionWidth);
 			if(partitionSlices.size() > 0) {
 				sliceCount += partitionSlices.size();
-				//Double tupleWeight = ((double) oldLoad.get(i)) / oldPlan.getTupleCount(i); // per tuple
-				Double tupleWeight = 1.0; // per tuple
+				Double tupleWeight = ((double) oldLoad.get(i)) / oldPlan.getTupleCount(i); // per tuple
 				for(List<Plan.Range> slice : partitionSlices) {  // for each slice
 					Long sliceSize = Plan.getRangeListWidth(slice);
 					Long newWeight = (long) (tupleWeight *  ((double) sliceSize));
