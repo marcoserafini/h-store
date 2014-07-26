@@ -81,12 +81,12 @@ public class Controller implements Runnable {
 
 		ttExecutor = new TupleTrackerExecutor();
 		// connect to VoltDB server
-		client = ClientFactory.createClient();
-		client.configureBlocking(false);
-		sites = CatalogUtil.getAllSites(catalog);
-		this.catalog_context = catalog_context;
-		connectToHost();
-		provisioning = new Provisioning(sites, no_of_partitions, sitesPerHost, partPerSite, highCPU, lowCPU);
+//		client = ClientFactory.createClient();
+//		client.configureBlocking(false);
+//		sites = CatalogUtil.getAllSites(catalog);
+//		this.catalog_context = catalog_context;
+//		connectToHost();
+//		provisioning = new Provisioning(sites, no_of_partitions, sitesPerHost, partPerSite, highCPU, lowCPU);
 
 		if(hstore_conf.global.hasher_plan == null){
 			System.out.println("Must set global.hasher_plan to specify plan file!");
@@ -122,7 +122,7 @@ public class Controller implements Runnable {
 
 	@Override
 	public void run () {
-		if (doMonitoring == 1){
+/*		if (doMonitoring == 1){
 			try {
 				while(true){
 					Thread.sleep(POLL_FREQUENCY);
@@ -152,8 +152,8 @@ public class Controller implements Runnable {
 			}
 		}
 		else{
-			doReconfiguration();
-		}
+*/			doReconfiguration();
+//		}
 	}
 
 	public void doReconfiguration(){
@@ -171,7 +171,7 @@ public class Controller implements Runnable {
 			//System.out.println("Essam Before: hotTuplesList size is " + hotTuplesList.size());
 			System.out.println("Starting tuple tracking");	
 
-			ttExecutor.turnOnOff(time_window,client);	// turn on tuple tracking for time window of X seconds
+//			ttExecutor.turnOnOff(time_window,client);	// turn on tuple tracking for time window of X seconds
 
 			
 			
@@ -181,11 +181,15 @@ public class Controller implements Runnable {
 			// here we get load per site
 			ttExecutor.getSiteLoadPerPart(no_of_partitions,mSiteLoad);
 
+		} catch(Exception e) {
+			System.out.println("Caught on exception " + e.toString());
+			e.printStackTrace(System.out);
+		}
 			System.out.println("Got list of hot tuples");	
 
 			// here we call the planner
 
-			if(doProvisioning == 1)
+/*			if(doProvisioning == 1)
 			{
 				System.out.println("Provisioning is on");	
 				int numberOfPartitions = provisioning.partitionsRequired(CPUUtilPerPartitionMap);
@@ -200,21 +204,21 @@ public class Controller implements Runnable {
 			}
 			else
 			{
-				System.out.println("Provisioning is off");
+*/				System.out.println("Provisioning is off");
                 long before = System.currentTimeMillis();
 				currentPlan = algo.computePlan(hotTuplesList, mSiteLoad, planFile.toString(), 
 						no_of_partitions, timeLimit, catalog_context);
                 long after = System.currentTimeMillis();
                 System.out.println("The planner took " + (after-before) + " ms to find a new plan");
-			}
+//			}
 
-			System.out.println("Calculated new plan");
+//			System.out.println("Calculated new plan");
 
-			currentPlan.toJSON(outputPlanFile.toString());
-			String outputPlan = FileUtil.readFile(outputPlanFile.toString());
+//			currentPlan.toJSON(outputPlanFile.toString());
+//			String outputPlan = FileUtil.readFile(outputPlanFile.toString());
 
-			ClientResponse cresponse = null;
-			try {
+//			ClientResponse cresponse = null;
+/*			try {
 				cresponse = client.callProcedure("@ReconfigurationRemote", 0, outputPlan, "livepull");
                                 //cresponse = client.callProcedure("@ReconfigurationRemote", 0, outputPlan, "stopcopy");
                                 System.out.println("Controller: received response: " + cresponse);
@@ -236,10 +240,7 @@ public class Controller implements Runnable {
 				System.out.println("@Reconfiguration transaction aborted");
 				System.exit(1);
 			}
-
-		} catch(Exception e) {
-			System.out.println("Caught on exception " + e.toString());
-		}
+*/
 	}
 
 	public void connectToHost(){

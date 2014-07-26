@@ -52,7 +52,9 @@ public class OneTieredPlacement extends Placement {
 			List<List<Plan.Range>> partitionSlices = aPlan.getRangeSlices(i,  coldPartitionWidth);
 			if(partitionSlices.size() > 0) {
 				sliceCount += partitionSlices.size();
-				Double tupleWeight = ((double) partitionTotals.get(i)) / aPlan.getTupleCount(i); // per tuple
+				//Double tupleWeight = ((double) partitionTotals.get(i)) / aPlan.getTupleCount(i); // per tuple
+				Double tupleWeight = ((double) partitionTotals.get(i)) 
+							/ aPlan.getTupleCount(i); // per tuple
 				for(List<Plan.Range> slice : partitionSlices) {  // for each slice
 					Long sliceSize = Plan.getRangeListWidth(slice);
 					Long newWeight = (long) (tupleWeight *  ((double) sliceSize));
@@ -101,7 +103,7 @@ public class OneTieredPlacement extends Placement {
 				maxAccess = access;
 			}
 		}
-		double partitionUpperBound = Math.max(meanAccesses, maxAccess) * 1.05; // slightly over target
+		double partitionUpperBound = Math.max(meanAccesses, maxAccess) * 1.1; // slightly over target
 
 		// one constraint for each partition for load balancing, one for each placement s.t. it appears exactly once
 		GLPK.glp_add_rows(lp, partitionCount + sliceCount);

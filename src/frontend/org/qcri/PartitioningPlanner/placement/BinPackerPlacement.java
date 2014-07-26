@@ -94,7 +94,8 @@ public class BinPackerPlacement extends Placement {
 			List<List<Plan.Range>> partitionSlices = oldPlan.getRangeSlices(i,  coldPartitionWidth);
 			if(partitionSlices.size() > 0) {
 				sliceCount += partitionSlices.size();
-				Double tupleWeight = ((double) oldLoad.get(i)) / oldPlan.getTupleCount(i); // per tuple
+				//Double tupleWeight = ((double) oldLoad.get(i)) / oldPlan.getTupleCount(i); // per tuple
+				Double tupleWeight = 1.0; // per tuple
 				for(List<Plan.Range> slice : partitionSlices) {  // for each slice
 					Long sliceSize = Plan.getRangeListWidth(slice);
 					Long newWeight = (long) (tupleWeight *  ((double) sliceSize));
@@ -263,9 +264,9 @@ public class BinPackerPlacement extends Placement {
 
 		GLPK.glp_delete_prob(lp);
 		
-		if(!catalogContext.jarPath.getName().contains("tpcc")) {
+		//if(!catalogContext.jarPath.getName().contains("tpcc")) {
 			aPlan = demoteTuples(hotTuplesList, aPlan);
-		}
+		//}
 		removeEmptyPartitions(aPlan);
 		return aPlan;
 

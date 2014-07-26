@@ -93,7 +93,8 @@ public class FirstFitPlacement extends Placement {
 		for(Integer i : aPlan.getAllRanges().keySet()) { // foreach partition
 			List<List<Plan.Range>> partitionSlices = aPlan.getRangeSlices(i,  coldPartitionWidth);
 			if(partitionSlices.size() > 0) {
-				Double tupleWeight = ((double) oldLoad.get(i)) / aPlan.getTupleCount(i); // per tuple
+				//Double tupleWeight = ((double) oldLoad.get(i)) / aPlan.getTupleCount(i); // per tuple
+				Double tupleWeight = 1.0; // per tuple
 
 				for(List<Plan.Range> slice : partitionSlices) {  // for each slice
 
@@ -129,9 +130,9 @@ public class FirstFitPlacement extends Placement {
 			
 		} // end for each partition
 
-		if(!catalogContext.jarPath.getName().contains("tpcc")) {
+		//if(!catalogContext.jarPath.getName().contains("tpcc")) {
 			newPlan = demoteTuples(hotTuplesListCopy, newPlan);	
-		}
+		//}
 		removeEmptyPartitions(newPlan);
 		return newPlan;
 
