@@ -14,7 +14,7 @@ UpdateRecordProportion=0.15
 #ScanRecordProportion=0.30
 
 fixed_size = true
-loadthreads = 1
+#loadthreads = 1
 
 # Zipfian skew factor for tuple access
 # for 95% of accesses -> 5% of tuples
@@ -27,6 +27,6 @@ loadthreads = 1
 #random_shift=false
 requestdistribution=zipfian
 skew_factor = 0.65
-#num_hot_spots=30
-#percent_accesses_to_hot_spots=0.80
+num_hot_spots=30
+percent_accesses_to_hot_spots=0.80
 num_records = 60000000
