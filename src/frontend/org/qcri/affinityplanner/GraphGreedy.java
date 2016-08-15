@@ -2,8 +2,15 @@ package org.qcri.affinityplanner;
 
 import it.unimi.dsi.fastutil.ints.*;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.Collections;
 
 import org.apache.log4j.Logger;
@@ -36,7 +43,7 @@ public class GraphGreedy extends PartitionerAffinity {
      * @return true if could find feasible partitioning, false otherwise
      */   
     @Override
-    public boolean repartition () {
+    public boolean repartition (boolean firstRepartition) {
 
         if (Controller.PARTITIONS_PER_SITE == -1 || Controller.MAX_PARTITIONS == -1){
             ////System.out.println("GraphPartitioner: Must initialize PART_PER_SITE and MAX_PARTITIONS");
@@ -57,15 +64,20 @@ public class GraphGreedy extends PartitionerAffinity {
         IntList overloadedPartitions = new IntArrayList();
 
         ////System.out.println("Load per partition after moving border tuples");
-        for(int i = 0; i < Controller.MAX_PARTITIONS; i++){
-            if(activePartitions.contains(i)){
-                double load =  m_graph.getLoadPerPartition(i);
-                partitionLoadCache[i] = load;
-                ////System.out.println(load);
-                if (load > Controller.MAX_LOAD_PER_PART){
-                    overloadedPartitions.add(i);
-                }
+        for (int i : activePartitions){
+            double load =  m_graph.getLoadPerPartition(i);
+            partitionLoadCache[i] = load;
+            ////System.out.println(load);
+            if (load > Controller.MAX_LOAD_PER_PART){
+                overloadedPartitions.add(i);
             }
+        }
+
+        // move back formerly hot tuples that are not hot anymore
+        if(!firstRepartition){
+            // TODO
+            System.out.println("WARNING! Incremental execution");
+            revertMoves(activePartitions);
         }
 
         if (! overloadedPartitions.isEmpty()){
@@ -74,7 +86,7 @@ public class GraphGreedy extends PartitionerAffinity {
              *  SCALE OUT
              */
 
-            ////System.out.println("Move hot tuples");
+            System.out.println("MOVING HOT TUPLES");
 
             return offloadHottestTuples(overloadedPartitions, activePartitions);
         }
@@ -82,6 +94,8 @@ public class GraphGreedy extends PartitionerAffinity {
             /*
              *  SCALE IN
              */
+
+            System.out.println("SCALING IN");
 
             scaleIn(activePartitions);
         }
@@ -104,6 +118,18 @@ public class GraphGreedy extends PartitionerAffinity {
         ////System.out.println("#######################");
         
         ////System.out.println(Controller.DTXN_COST);
+
+        Path movesFile = FileSystems.getDefault().getPath(".", "moves.log");
+        BufferedWriter writer;
+
+        try {
+            writer = Files.newBufferedWriter(movesFile, Charset.forName("US-ASCII"), StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+        } catch (IOException e) {
+            LOG.error("Controller failed while writing moves file " + movesFile.toString());
+            System.out.println("Controller failed while writing moves file " + movesFile.toString());
+            return false;
+        }
+
 
         for(int overloadedPartition : overloadedPartitions){
 
@@ -149,6 +175,8 @@ public class GraphGreedy extends PartitionerAffinity {
 
                         m_graph.moveHotVertices(candidateMove.movingVertices, candidateMove.toPartition);
                         numMovedVertices += candidateMove.movingVertices.size();
+
+                        writeMove(writer, candidateMove);
                         //                        lastHotVertexMoved = nextHotTuplePos - 1;
 
                         //                        testNoOverload(candidateMove.toPartition);
@@ -264,6 +292,8 @@ public class GraphGreedy extends PartitionerAffinity {
                     //                    lastHotVertexMoved = nextHotTuplePos - 1;
                     //                    testNoOverload(candidateMove.toPartition);
 
+                    writeMove(writer, candidateMove);
+
                     partitionLoadCache[overloadedPartition] = m_graph.getLoadPerPartition(overloadedPartition);
                     nextHotTuplePos = candidateMove.nextHotTuplePos;
                     lastHotVertexMoved = nextHotTuplePos - 1;
@@ -276,6 +306,14 @@ public class GraphGreedy extends PartitionerAffinity {
 
             } // END while(getLoadPerSite(overloadedPartition) <= maxLoadPerSite)
         }// END for(int overloadedPartition : overloadedPartitions)
+
+        try {
+            writer.close();
+        } catch (IOException e) {
+            LOG.error("Controller failed while closing file " + writer.toString() + "\nStack trace " + Controller.stackTraceToString(e));
+            System.out.println("Controller failed while closing file " + writer.toString() + "\nStack trace " + Controller.stackTraceToString(e));
+        }
+
         return true;
     }
 
@@ -305,6 +343,7 @@ public class GraphGreedy extends PartitionerAffinity {
             }
 
             move.movingVertices.add(nextHotVertex);
+            move.startingHotTuple = nextHotVertex;
             ////System.out.println("Adding vertex " + m_graph.m_vertexName.get(nextHotVertex));
 
             findBestPartition(move, fromPartition, activePartitions);
@@ -500,6 +539,103 @@ public class GraphGreedy extends PartitionerAffinity {
         ////System.out.println("Max affinity: " + maxAffinity);
 
         return res;
+    }
+
+    private void writeMove(BufferedWriter writer, Move move){
+        try {
+            String vertexName = m_graph.getTupleName(move.startingHotTuple);
+            int original_partition = m_graph.getOriginalPartition(move.startingHotTuple);
+
+            writer.write(vertexName + ";" + original_partition + "," + move.toPartition);
+            writer.newLine();
+
+            for(int vertex : move.movingVertices){
+                if (vertex != move.startingHotTuple) {
+                    vertexName = m_graph.getTupleName(vertex);
+                    original_partition = m_graph.getOriginalPartition(vertex);
+
+                    writer.write(vertexName + ";" + original_partition + "," + move.toPartition);
+                    writer.newLine();
+                }
+            }
+            writer.newLine();
+
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private boolean revertMoves(IntList activePartitions){
+
+        IntList hotVerticesList = new IntArrayList();
+        for (int partition : activePartitions) {
+            int topk = Math.min(m_graph.numVertices(partition), Controller.TOPK);
+            hotVerticesList.addAll(m_graph.getHottestVertices(partition, topk));
+        }
+
+        Path movesFile = FileSystems.getDefault().getPath(".", "moves.log");
+        BufferedReader reader;
+
+        try {
+            reader = Files.newBufferedReader(movesFile, Charset.forName("US-ASCII"));
+
+            String line = "";
+            line = reader.readLine();
+
+            while (line != null) {
+                System.out.println("Reading line " + line);
+
+                String[] lineSplit = line.split(";");
+                String oldHotTupleName = lineSplit[0];
+                boolean stillHot = false;
+
+                for (int hotTuple : hotVerticesList) {
+                    String hotTupleName = m_graph.getTupleName(hotTuple);
+                    if (hotTupleName.equals(oldHotTupleName)) {
+                        stillHot = true;
+                        break;
+                    }
+                }
+
+                if (!stillHot) {
+                    // move hot tuple in the graph (if present) back to the fromPartition
+                    String[] partitions = lineSplit[1].split(",");
+                    int fromPartition = Integer.parseInt(partitions[0]);
+                    int toPartition = Integer.parseInt(partitions[1]);
+
+                    m_graph.moveVertex(oldHotTupleName, toPartition, fromPartition);
+
+                    line = reader.readLine();
+
+                    // move all other tuples in the clump back to the fromPartition
+                    while (line != null && line.length() > 0) {
+                        lineSplit = line.split(";");
+                        String tupleName = lineSplit[0];
+                        partitions = lineSplit[1].split(",");
+                        fromPartition = Integer.parseInt(partitions[0]);
+                        toPartition = Integer.parseInt(partitions[1]);
+
+                        m_graph.moveVertex(tupleName, toPartition, fromPartition);
+
+                        line = reader.readLine();
+                    }
+                } else {
+                    // skip - read through the current move until the end
+                    while (line != null && line.length() > 0) {
+                        line = reader.readLine();
+                    }
+                }
+
+                line = reader.readLine();
+            }
+
+        } catch (IOException e) {
+            LOG.error("Controller failed while reading moves file " + movesFile.toString());
+            System.out.println("Controller failed while reading moves file " + movesFile.toString());
+            return false;
+        }
+
+        return true;
     }
 
     @Override

@@ -300,7 +300,7 @@ public class Plan {
      * 
      * @param table
      * @param partition
-     * @param from
+     * @param tupleId
      * @return
      */
     public boolean removeTupleId(String table, Integer partition, Long tupleId) {

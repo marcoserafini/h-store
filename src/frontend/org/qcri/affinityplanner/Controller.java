@@ -53,6 +53,7 @@ public class Controller extends Thread {
     public static boolean EXEC_MONITORING = true;
     public static boolean EXEC_UPDATE_PLAN = true;
     public static boolean EXEC_RECONF = true;
+    public static boolean FIRST_RECONF = true;
     public static String PLAN_IN = "plan_affinity.json";
     public static String PLAN_OUT = "plan_out.json";
     public static String METIS_OUT = "metis.txt";
@@ -114,7 +115,7 @@ public class Controller extends Thread {
             }
         }
         MAX_PARTITIONS++;
-        
+
         if (hstore_conf.global.hasher_plan != null) {
             PLAN_IN = hstore_conf.global.hasher_plan;
 //            LOG.info("Updating plan_in to be " + PLAN_IN);
@@ -245,12 +246,14 @@ public class Controller extends Thread {
             }
 
             t2 = System.currentTimeMillis();
-            record("Time taken:" + (t2-t1));
-                        
-//            if (partitioner instanceof PartitionerAffinity){
+            record("Time taken: " + (t2-t1));
+
+            if (partitioner instanceof PartitionerAffinity){
+                System.out.println("Number of vertices " + ((PartitionerAffinity) partitioner).numVertices());
+                System.out.println("Number of edges " + ((PartitionerAffinity) partitioner).numEdges());
 //                ((PartitionerAffinity) partitioner).graphToFile(FileSystems.getDefault().getPath(".", "graph.log"));
 //                ((PartitionerAffinity) partitioner).graphToCPLEXFile(FileSystems.getDefault().getPath(".", "graph-cplex.txt"));
-//            }
+            }
             
             record("======================== PARTITIONING GRAPH ========================");
             t1 = System.currentTimeMillis();
@@ -278,8 +281,7 @@ public class Controller extends Thread {
             System.out.println("Max load: " + Controller.MAX_LOAD_PER_PART);
             System.out.println("Min load: " + Controller.MIN_LOAD_PER_PART);
 
-
-            boolean b = partitioner.repartition();
+            boolean b = partitioner.repartition(FIRST_RECONF);
             
             if (!b){
                 record("Problem while partitioning graph. Writing incomplete plan out");
@@ -366,7 +368,7 @@ public class Controller extends Thread {
     }
     
     /**
-     * @param args
+     * @param vargs
      */
     public static void main(String[] vargs){
         

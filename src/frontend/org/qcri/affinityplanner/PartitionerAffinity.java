@@ -43,6 +43,7 @@ public abstract class PartitionerAffinity implements Partitioner {
         public IntOpenHashSet movingVertices;
         public boolean wasExtended;
         public int nextHotTuplePos;
+        public int startingHotTuple;
         
         public Move (){
             this.toPartition = -1;
@@ -52,6 +53,7 @@ public abstract class PartitionerAffinity implements Partitioner {
             this.movingVertices = new IntOpenHashSet();
             this.wasExtended = false;
             this.nextHotTuplePos = -1;
+            this.startingHotTuple = -1;
         }
 
         public Move(Move other) {
@@ -62,6 +64,7 @@ public abstract class PartitionerAffinity implements Partitioner {
             this.movingVertices = other.movingVertices.clone();
             this.wasExtended = other.wasExtended;
             this.nextHotTuplePos = other.nextHotTuplePos;
+            this.startingHotTuple = other.startingHotTuple;
         }
         
         public Move clone(){
@@ -84,7 +87,8 @@ public abstract class PartitionerAffinity implements Partitioner {
     // refreshed every time findBestPartition is invoked
     protected double[] partitionLoadCache = new double [Controller.MAX_PARTITIONS];
 
-    public abstract boolean repartition ();
+    @Override
+    public abstract boolean repartition (boolean firstRepartition);
 
 
     /**
@@ -635,6 +639,14 @@ public abstract class PartitionerAffinity implements Partitioner {
             }
         }
         return numMovedVertices;
+    }
+
+    public int numVertices(){
+        return m_graph.numVertices();
+    }
+
+    public int numEdges(){
+        return m_graph.numEdges();
     }
 
     public double getLoadPerPartition(int j){

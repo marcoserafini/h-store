@@ -305,7 +305,7 @@ public class SimplePartitioner extends PartitionerAffinity {
     }
     
     @Override
-    public boolean repartition() {
+    public boolean repartition(boolean firstRepartition) {
 
         int addedPartitions = 0;
 

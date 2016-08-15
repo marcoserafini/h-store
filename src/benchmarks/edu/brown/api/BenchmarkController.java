@@ -2124,6 +2124,9 @@ public class BenchmarkController {
             } else if (parts[0].equalsIgnoreCase(ArgumentsParser.PARAM_ELASTIC_EXEC_RECONF)){
                 Controller.EXEC_RECONF = Boolean.parseBoolean(parts[1]);
                 elastic_run = true;
+            } else if (parts[0].equalsIgnoreCase(ArgumentsParser.PARAM_ELASTIC_FIRST_RECONF)){
+                Controller.FIRST_RECONF = Boolean.parseBoolean(parts[1]);
+                elastic_run = true;
             } else if (parts[0].equalsIgnoreCase("elastic.delay")){
                 elastic_delay = Long.parseLong(parts[1]);
                 elastic_run = true;

@@ -2,7 +2,7 @@ package org.qcri.affinityplanner;
 
 public interface Partitioner {
     
-    public boolean repartition();
+    public boolean repartition(boolean firstRepartition);
 
     public void writePlan(String plan_out);
 

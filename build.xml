@@ -1807,6 +1807,7 @@ TEST CASES
         <arg value="elastic.run_monitoring=${elastic.run_monitoring}" />
         <arg value="elastic.update_plan=${elastic.update_plan}" />
         <arg value="elastic.exec_reconf=${elastic.exec_reconf}" />
+        <arg value="elastic.first_reconf=${elastic.first_reconf}" />
         <arg value="elastic.delay=${elastic.delay}" />
         <arg value="elastic.plan_in=${elastic.plan_in}" />
         <arg value="elastic.plan_out=${elastic.plan_out}" />
@@ -2653,6 +2654,7 @@ UTILITIES
 	<arg value="elastic.run_monitoring=${elastic.run_monitoring}" />
 	<arg value="elastic.update_plan=${elastic.update_plan}" />
 	<arg value="elastic.exec_reconf=${elastic.exec_reconf}" />
+	<arg value="elastic.first_reconf=${elastic.first_reconf}" />
 	<arg value="elastic.plan_in=${elastic.plan_in}" />
 	<arg value="elastic.plan_out=${elastic.plan_out}" />
         <arg value="elastic.algo=${elastic.algo}" />
@@ -2686,6 +2688,7 @@ UTILITIES
 	<arg value="elastic.run_monitoring=${elastic.run_monitoring}" />
 	<arg value="elastic.update_plan=${elastic.update_plan}" />
 	<arg value="elastic.exec_reconf=${elastic.exec_reconf}" />
+	<arg value="elastic.first_reconf=${elastic.first_reconf}" />
 	<arg value="elastic.plan_in=${elastic.plan_in}" />
 	<arg value="elastic.plan_out=${elastic.plan_out}" />
         <arg value="elastic.algo=${elastic.algo}" />

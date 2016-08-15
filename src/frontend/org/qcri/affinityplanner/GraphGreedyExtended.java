@@ -313,7 +313,7 @@ public class GraphGreedyExtended extends PartitionerAffinity {
      * @return true if could find feasible partitioning, false otherwise
      */   
     @Override
-    public boolean repartition () {
+    public boolean repartition (boolean firstRepartition) {
 
         if (Controller.PARTITIONS_PER_SITE == -1 || Controller.MAX_PARTITIONS == -1){
             System.out.println("GraphPartitioner: Must initialize PART_PER_SITE and MAX_PARTITIONS");

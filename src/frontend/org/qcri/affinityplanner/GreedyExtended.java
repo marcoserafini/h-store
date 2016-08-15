@@ -181,7 +181,8 @@ public class GreedyExtended implements Partitioner {
         }
     }
 
-    public boolean repartition(){
+    @Override
+    public boolean repartition(boolean firstRepartition){
 
         int addedPartitions = 0;
 

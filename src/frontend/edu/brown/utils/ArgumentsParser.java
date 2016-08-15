@@ -200,6 +200,7 @@ public class ArgumentsParser {
     public static final String PARAM_ELASTIC_EXEC_MONITORING = PARAM_ELASTIC + ".run_monitoring";
     public static final String PARAM_ELASTIC_EXEC_UPDATE_PLAN = PARAM_ELASTIC + ".update_plan";
     public static final String PARAM_ELASTIC_EXEC_RECONF = PARAM_ELASTIC + ".exec_reconf";
+    public static final String PARAM_ELASTIC_FIRST_RECONF = PARAM_ELASTIC + ".first_reconf";
     public static final String PARAM_ELASTIC_PLAN_IN = PARAM_ELASTIC + ".plan_in";
     public static final String PARAM_ELASTIC_PLAN_OUT = PARAM_ELASTIC + ".plan_out";
     public static final String PARAM_ELASTIC_ALGO = PARAM_ELASTIC + ".algo";
@@ -1043,8 +1044,12 @@ public class ArgumentsParser {
 
         if (this.params.containsKey(PARAM_ELASTIC_EXEC_RECONF)){
             Controller.EXEC_RECONF = Boolean.parseBoolean(this.params.get(PARAM_ELASTIC_EXEC_RECONF));
-        }        
-        
+        }
+
+        if (this.params.containsKey(PARAM_ELASTIC_FIRST_RECONF)){
+            Controller.FIRST_RECONF = Boolean.parseBoolean(this.params.get(PARAM_ELASTIC_FIRST_RECONF));
+        }
+
         if (this.params.containsKey(PARAM_ELASTIC_PLAN_IN)){
             Controller.PLAN_IN = this.params.get(PARAM_ELASTIC_PLAN_IN);
         }        

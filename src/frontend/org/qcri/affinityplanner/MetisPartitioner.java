@@ -29,7 +29,7 @@ public class MetisPartitioner extends GraphGreedy {
     }
 
     @Override
-    public boolean repartition() {
+    public boolean repartition(boolean firstRepartition) {
         
         System.out.println(String.format("Writing metis graph out to %s ",FileSystems.getDefault().getPath(".", Controller.METIS_OUT)));
 
