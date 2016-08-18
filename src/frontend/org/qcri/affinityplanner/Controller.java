@@ -251,7 +251,7 @@ public class Controller extends Thread {
             if (partitioner instanceof PartitionerAffinity){
                 System.out.println("Number of vertices " + ((PartitionerAffinity) partitioner).numVertices());
                 System.out.println("Number of edges " + ((PartitionerAffinity) partitioner).numEdges());
-//                ((PartitionerAffinity) partitioner).graphToFile(FileSystems.getDefault().getPath(".", "graph.log"));
+                ((PartitionerAffinity) partitioner).graphToFile(FileSystems.getDefault().getPath(".", "graph.log"));
 //                ((PartitionerAffinity) partitioner).graphToCPLEXFile(FileSystems.getDefault().getPath(".", "graph-cplex.txt"));
             }
             

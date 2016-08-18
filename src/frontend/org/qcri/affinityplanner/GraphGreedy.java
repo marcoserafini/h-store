@@ -76,8 +76,10 @@ public class GraphGreedy extends PartitionerAffinity {
         // move back formerly hot tuples that are not hot anymore
         if(!firstRepartition){
             // TODO
-            System.out.println("WARNING! Incremental execution");
+            System.out.println("REVERTING");
             revertMoves(activePartitions);
+            System.out.println("Reverted plan:");
+            System.out.println(m_graph.planToString());
         }
 
         if (! overloadedPartitions.isEmpty()){
@@ -583,7 +585,7 @@ public class GraphGreedy extends PartitionerAffinity {
             line = reader.readLine();
 
             while (line != null) {
-                System.out.println("Reading line " + line);
+//                System.out.println("Reading line " + line);
 
                 String[] lineSplit = line.split(";");
                 String oldHotTupleName = lineSplit[0];
