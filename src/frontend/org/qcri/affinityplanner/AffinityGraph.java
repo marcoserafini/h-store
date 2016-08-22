@@ -370,8 +370,8 @@ public class AffinityGraph {
 //                System.out.println("remove ID: " + fields[1]);
             boolean res = m_plan_handler.removeTupleId(fields[0], fromPartition, Long.parseLong(fields[1]));
             if (!res){
-                System.out.println("Problem removing " + movedVertexName + " from partition " + fromPartition);
-                System.exit(0);
+                System.out.println("Could not remove " + movedVertexName + " from partition " + fromPartition);
+                //System.exit(0);
             }
 //                System.out.println("After removal");
 //                System.out.println(m_plan_handler.toString() + "\n");
@@ -380,8 +380,8 @@ public class AffinityGraph {
 //                System.out.println(m_plan_handler.toString() + "\n");
             res = m_plan_handler.addRange(fields[0], toPartition, Long.parseLong(fields[1]), Long.parseLong(fields[1]));
             if (!res){
-                System.out.println("Problem adding " + movedVertexName + " to partition " + toPartition);
-                System.exit(0);
+                System.out.println("Could not add " + movedVertexName + " to partition " + toPartition);
+                //System.exit(0);
             }
 //                System.out.println("After adding range");
 //                System.out.println(m_plan_handler.toString() + "\n");
@@ -629,7 +629,7 @@ public class AffinityGraph {
         return sum / 2;
     }
 
-    public String verticesToString(IntSet set){
+    public String verticesToString(IntCollection set){
         StringBuilder res = new StringBuilder();
         for (int val : set){
             res.append(m_vertexName.get(val) + " from partition " + m_vertexPartition.get(val) + "\n");

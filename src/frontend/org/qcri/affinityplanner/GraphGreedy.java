@@ -569,12 +569,18 @@ public class GraphGreedy extends PartitionerAffinity {
 
     private boolean revertMoves(IntList activePartitions){
 
+/*
         int topk = Controller.TOPK;
         for (int partition : activePartitions) {
             topk = Math.min(m_graph.numVertices(partition), topk);
         }
+
+        System.out.println("Getting hot vertices");
+
         IntList hotVerticesList = m_graph.getHottestVertices(activePartitions, topk);
 
+        System.out.println("Hot vertices " + m_graph.verticesToString(hotVerticesList));
+*/
         Path movesFile = FileSystems.getDefault().getPath(".", "moves.log");
         BufferedReader reader;
 
@@ -583,14 +589,15 @@ public class GraphGreedy extends PartitionerAffinity {
 
             String line = "";
             line = reader.readLine();
-
+            
             while (line != null) {
-//                System.out.println("Reading line " + line);
+                System.out.println("Reading line " + line);
 
                 String[] lineSplit = line.split(";");
                 String oldHotTupleName = lineSplit[0];
-                boolean stillHot = false;
 
+                boolean stillHot = false;
+/*
                 for (int hotTuple : hotVerticesList) {
                     String hotTupleName = m_graph.getTupleName(hotTuple);
                     if (hotTupleName.equals(oldHotTupleName)) {
@@ -599,6 +606,8 @@ public class GraphGreedy extends PartitionerAffinity {
                     }
                 }
 
+                System.out.println("Still hot? " + stillHot);
+*/
                 if (!stillHot) {
                     // move hot tuple in the graph (if present) back to the fromPartition
                     String[] partitions = lineSplit[1].split(",");
@@ -608,6 +617,8 @@ public class GraphGreedy extends PartitionerAffinity {
                     m_graph.moveVertex(oldHotTupleName, toPartition, fromPartition);
 
                     line = reader.readLine();
+
+                    System.out.println("Reading also line " + line);
 
                     // move all other tuples in the clump back to the fromPartition
                     while (line != null && line.length() > 0) {
@@ -620,11 +631,13 @@ public class GraphGreedy extends PartitionerAffinity {
                         m_graph.moveVertex(tupleName, toPartition, fromPartition);
 
                         line = reader.readLine();
+                        System.out.println("Reading also line " + line);
                     }
                 } else {
                     // skip - read through the current move until the end
                     while (line != null && line.length() > 0) {
                         line = reader.readLine();
+                        System.out.println("Skipping also line " + line);
                     }
                 }
 
