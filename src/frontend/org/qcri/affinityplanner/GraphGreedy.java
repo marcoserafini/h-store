@@ -569,11 +569,11 @@ public class GraphGreedy extends PartitionerAffinity {
 
     private boolean revertMoves(IntList activePartitions){
 
-        IntList hotVerticesList = new IntArrayList();
+        int topk = Controller.TOPK;
         for (int partition : activePartitions) {
-            int topk = Math.min(m_graph.numVertices(partition), Controller.TOPK);
-            hotVerticesList.addAll(m_graph.getHottestVertices(partition, topk));
+            topk = Math.min(m_graph.numVertices(partition), topk);
         }
+        IntList hotVerticesList = m_graph.getHottestVertices(activePartitions, topk);
 
         Path movesFile = FileSystems.getDefault().getPath(".", "moves.log");
         BufferedReader reader;
