@@ -349,7 +349,7 @@ public class AffinityGraph {
     }
 
     public void moveVertex (String movedVertexName, int fromPartition, int toPartition){
-        if (m_nameVertex != null && m_nameVertex.contains(movedVertexName)) {
+        if (m_nameVertex != null && m_nameVertex.containsKey(movedVertexName)) {
             int movedVertex = m_nameVertex.get(movedVertexName);
             moveVertexInGraph(movedVertex, fromPartition, toPartition);
         }
