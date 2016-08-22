@@ -1093,5 +1093,81 @@ public class AffinityGraph {
         return res;
     }
 
+    /**
+     * Returns sorted (descending order) list of top-k vertices from site
+     *
+     * @param k
+     * @return
+     */
+    protected IntList getHottestVertices(IntList activePartitions, int k){
+
+        IntList hottestVertices = new IntArrayList (k);
+        final Int2DoubleMap hotnessMap = new Int2DoubleOpenHashMap (k);
+
+        for (int partition : activePartitions) {
+            k = Math.min(k, AffinityGraph.m_partitionVertices.get(partition).size());
+        }
+
+        int lowestPos = 0;
+        double lowestLoad = Double.MAX_VALUE;
+
+        IntSet singleton = new IntOpenHashSet(1);
+
+        for (int partition : activePartitions) {
+            for (int vertex : AffinityGraph.m_partitionVertices.get(partition)) {
+
+                singleton.clear();
+                singleton.add(vertex);
+                double vertexLoad = getLoadVertices(singleton);
+
+                if (hottestVertices.size() < k) {
+
+                    hottestVertices.add(vertex);
+                    hotnessMap.put(vertex, vertexLoad);
+                    if (lowestLoad > vertexLoad) {
+                        lowestPos = hottestVertices.size() - 1;
+                        lowestLoad = vertexLoad;
+                    }
+                } else {
+                    if (vertexLoad > lowestLoad) {
+
+                        hotnessMap.remove(hottestVertices.get(lowestPos));
+
+                        hottestVertices.set(lowestPos, vertex);
+                        hotnessMap.put(vertex, vertexLoad);
+
+                        // find new lowest load
+                        lowestLoad = vertexLoad;
+                        for (int i = 0; i < k; i++) {
+                            double currLoad = hotnessMap.get(hottestVertices.get(i));
+                            if (currLoad < lowestLoad) {
+                                lowestPos = i;
+                                lowestLoad = currLoad;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // sort determines an _ascending_ order
+        // Comparator should return "a negative integer, zero, or a positive integer as the first argument is less than, equal to, or greater than the second"
+        // We want a _descending_ order, so we need to invert the comparator result
+        Collections.sort(hottestVertices, new AbstractIntComparator(){
+            @Override
+            public int compare(int o1, int o2) {
+                if (hotnessMap.get(o1) < hotnessMap.get(o2)){
+                    return 1;
+                }
+                else if (hotnessMap.get(o1) > hotnessMap.get(o2)){
+                    return -1;
+                }
+                return 0;
+            }
+        });
+
+        return hottestVertices;
+    }
+
 
 }
